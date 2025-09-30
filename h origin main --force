@@ -1,9 +1,0 @@
-[33mcommit 854d9c7cecc70510a17c43b4bb8381c8fef52278[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;32mRussell[m[33m, [m[1;32mNicole[m[33m)[m
-Author: Noah Worobec <158515103+nworobec@users.noreply.github.com>
-Date:   Fri Sep 19 15:57:24 2025 -0400
-
-    Initial commit
-
- LICENSE   | 21 [32m+++++++++++++++++++++[m
- README.md |  2 [32m++[m
- 2 files changed, 23 insertions(+)
