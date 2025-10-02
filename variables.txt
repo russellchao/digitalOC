@@ -1,0 +1,16 @@
+# Key Variables for NFL Play Analysis (Pre-Play Situation)
+
+quarter
+time_remaining
+down
+distance_to_first_down
+yard_line
+offense_team
+defense_team
+defense_formation
+field_position
+
+defensive_coverage_type
+blitz_called
+score_offense_before
+score_defense_before
