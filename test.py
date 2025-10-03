@@ -5,7 +5,7 @@
 import pandas as pd
 
 
-# Open the CSV file 
+# Open the 2024 Play-by-Play CSV file (First Part)
 df = pd.read_csv("Data/pbp_2024_0.csv")
 print(df.head())
 
@@ -41,9 +41,15 @@ relevant_columns = [
     'game_id', 'play_id', 'home_team', 'away_team', 'game_date', 'down',
     'ydstogo', 'quarter_seconds_remaining', 'half_seconds_remaining',
     'game_seconds_remaining', 'qtr', 'yardline_100', 'posteam_timeouts_remaining', 
-    'score_differential', 'posteam', 'defteam', 'posteam_timeouts_remaining'
+    'score_differential', 'posteam', 'defteam', 'posteam_timeouts_remaining',
+    'run_location', 'yards_after', 'rush_touchdown', 'first_down_rush', 'shotgun',
+    'rush_attempt', 'run_location', 'run_gap', 'tackled_for_loss', 
 ]
 df_relevant = df[relevant_columns]
+
+'''
+Couldn't find data types for: Formation (replaced with shotgun), Type of Run Play
+'''
 
 print(type(df_relevant))
 print(type(df))
