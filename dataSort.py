@@ -9,11 +9,10 @@ useful_cols =[
     "home_team", "away_team", "posteam", "defteam", "location",
     "stadium", "roof", "surface", "temp", "wind",
 
-    #Situation
+    #Situations
     "qtr", "down", "ydstogo", "yardline_100",
     "time", "quarter_seconds_remaining", "game_seconds_remaining",
-    "score_differential", "goal_to_go",
-    "posteam_timeouts_remaining", "defteam_timeouts_remaining",
+    "score_differential", "goal_to_go","posteam_timeouts_remaining", "defteam_timeouts_remaining",
 
     #Play details
     "play_type", "rush_attempt", "pass_attempt", "field_goal_attempt",
