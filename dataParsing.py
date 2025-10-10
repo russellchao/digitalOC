@@ -1,6 +1,7 @@
 import nflreadpy as nfl
 import pandas as pd
 
+
 # Load CSVs
 part = pd.read_csv("data/pbp_participation_2024.csv")
 pbp = pd.read_csv("data/pbp_2024.csv")
@@ -13,57 +14,130 @@ merged = pd.merge(
             "old_game_id", "play_id",
             "posteam", "defteam",
             "posteam_score", "defteam_score", "score_differential",
-            "posteam_timeouts_remaining", "defteam_timeouts_remaining"
+            "posteam_timeouts_remaining", "defteam_timeouts_remaining",
+            "down", "yards_gained", "ydstogo", "play_type"
         ]
     ],
-    left_on=["old_game_id", "play_id"],   # participation file keys
-    right_on=["old_game_id", "play_id"],  # pbp file keys
+    left_on=["old_game_id", "play_id"],
+    right_on=["old_game_id", "play_id"],
     how="left"
 )
 
 
-def get_offensive_snap_count(df, team):
-    return df[df["posteam"] == team]["play_id"].nunique()
+class Team:
+    def __init__(self, name: str, df: pd.DataFrame):
 
-def get_personnel_counts(df, team):
-    return df[df["posteam"] == team]["offense_personnel"].value_counts()
+        self.name = name
+        self.df = df
 
-def get_formation_counts(df, team):
-    return df[df["posteam"] == team]["offense_formation"].value_counts()
+    def offensive_snaps(self):
+        return self.df[self.df["posteam"] == self.name]["play_id"].nunique()
 
-def get_defense_personnel_counts(df, team):
-    return df[df["posteam"] == team]["defense_personnel"].value_counts()
+    def offensive_personnel_counts(self):
+        return self.df[self.df["posteam"] == self.name]["offense_personnel"].value_counts()
 
-def get_pressure_rate(df, team):
-    return df[df["posteam"] == team]["was_pressure"].mean()
+    def formation_counts(self):
+        return self.df[self.df["posteam"] == self.name]["offense_formation"].value_counts()
 
-def get_possession_defense_teams(df, play_id):
-    row = df[df["play_id"] == play_id]
-    if row.empty:
-        return None, None
-    row = row.iloc[0]
-    return row["posteam"], row["defteam"]
+    def defensive_personnel_faced(self):
+        return self.df[self.df["posteam"] == self.name]["defense_personnel"].value_counts()
 
-def get_score_differential(df, play_id):
-    row = df[df["play_id"] == play_id]
-    return None if row.empty else row.iloc[0]["score_differential"]
+    def pressure_rate(self):
+        return self.df[self.df["posteam"] == self.name]["was_pressure"].mean()
+    
+    @staticmethod
+    def success_rule(row):
+        """Return True if play is successful based on down and yards gained."""
+        if row["down"] == 1:
+            return row["yards_gained"] >= 0.5 * row["ydstogo"]
+        elif row["down"] == 2:
+            return row["yards_gained"] >= 0.7 * row["ydstogo"]
+        elif row["down"] in [3, 4]:
+            return row["yards_gained"] >= row["ydstogo"]
+        return False
 
-def get_timeouts(df, play_id):
-    row = df[df["play_id"] == play_id]
-    if row.empty:
-        return None, None
-    row = row.iloc[0]
-    return row["posteam_timeouts_remaining"], row["defteam_timeouts_remaining"]
+    
+    def success_rate_by_down(self):
+        df = self.df[self.df["posteam"] == self.name].copy()
+        df = df.dropna(subset=["down", "yards_gained", "ydstogo"])
+
+        df["successful"] = df.apply(self.success_rule, axis=1)
+
+        rates = (
+            df.groupby("down")["successful"]
+            .mean()
+            .round(3)
+            .rename("success_rate")
+        )
+
+        return rates
+    
+    def success_rate_by_down(self):
+        df = self.df[self.df["posteam"] == self.name].copy()
+        df = df.dropna(subset=["down", "yards_gained", "ydstogo"])
+
+        df["successful"] = df.apply(self.success_rule, axis=1)
+
+        rates = (
+            df.groupby("down")["successful"]
+            .mean()
+            .round(3)
+            .rename("success_rate")
+        )
+
+        return rates
+    
+    def success_rate_by_playType(self):
+        df = self.df[self.df["posteam"] == self.name].copy()
+        df = df.dropna(subset=["down", "yards_gained", "ydstogo"])
+
+        df["successful"] = df.apply(self.success_rule, axis=1)
+
+        rates = (
+            df.groupby("play_type")["successful"]
+            .mean()
+            .round(3)
+            .rename("success_rate")
+        )
+
+        return rates
+    
+    def playType_by_down(self):
+        # Filter to this team's offensive plays
+        df = self.df[self.df["posteam"] == self.name].copy()
+        
+        # Keep only rows with valid down and play_type
+        df = df.dropna(subset=["down", "play_type"])
+        
+        # Count plays by down and play_type
+        counts = df.groupby(["down", "play_type"]).size().unstack(fill_value=0)
+        
+        # Convert counts to percentages
+        fractions = counts.div(counts.sum(axis=1), axis=0).round(3)
+        
+        return fractions
 
 
+
+
+
+    
+
+    def __repr__(self):
+        return f"<Team {self.name}: {self.offensive_snaps()} offensive snaps>"
+
+
+# Example usage
 if __name__ == "__main__":
-    print(pbp.columns.tolist())
-    # Example usage on merged dataset
-    print("KC offensive snaps:", get_offensive_snap_count(merged, "KC"))
-    print("KC personnel counts:\n", get_personnel_counts(merged, "KC"))
-    print("KC Formation Usage:\n", get_formation_counts(merged, "KC"))
-    print("KC Defensive Personnel Faced:\n", get_defense_personnel_counts(merged, "KC"))
-    print("KC pressure rate:", get_pressure_rate(merged, "KC"))
-    print("Play teams (example):", get_possession_defense_teams(merged, 40))
-    print("Score diff (example):", get_score_differential(merged, 40))
-    print("Timeouts (example):", get_timeouts(merged, 40))
+    kc = Team("KC", merged)
+
+    #print(kc)
+    """print("Offensive Snaps:", kc.offensive_snaps())
+    print("\nOffensive Personnel:\n", kc.offensive_personnel_counts())
+    print("\nFormations:\n", kc.formation_counts())
+    print("\nDefensive Personnel Faced:\n", kc.defensive_personnel_faced())
+    print("\nPressure Rate:", kc.pressure_rate())"""
+    #print(kc.success_rate_by_down())
+    #print(kc.success_rate_by_playType())
+    print(kc.playType_by_down())
+    
