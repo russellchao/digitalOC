@@ -5,6 +5,9 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
 
 # Open the 2024 Play-by-Play CSV file (First Part)
 df = pd.read_csv("Data/pbp_2024_0.csv")
@@ -69,35 +72,68 @@ y variables include:
 play_type, run_location, pass_length, pass_type
 '''
 
-# We need 80% of the data for training (X_train, y_train), 20% for testing (X_test, y_test)
+# Filter columns that only contain "run" or "pass" for play_type
+df_filtered = df[df['play_type'].isin(['run', 'pass'])]
 
-y = df[['play_type', 'run_location', 'pass_length', 'pass_location']]
-print(y.head(50))
-
-# x variables using categories 1-3 for now
-x = df[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
+# (game situation) x variables using categories 1-3 for now
+X = df_filtered[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
         'game_seconds_remaining', 'game_half', 'score_differential', 'wp', 'vegas_wp',
         'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam',
         'posteam_type', 'div_game']]
-print(x.head(50))
+print(X.head(10))
+
+# y variable, play type will be "run" or "pass" for now
+y = df_filtered['play_type']
+print(y.head(10))
+
+''' HOLDING OFF RUN/PASS SPECIFICS FOR NOW '''
+# # running plays (if 'play_type' is 'run')
+# df_run_plays = df_play_type[(df_play_type['play_type'] == 'run') & (df_play_type['run_location'].notna())][df_situation.columns.tolist() + ['run_location']]
+# print(df_run_plays.head(10))
+
+# # passing plays (if 'play_type' is 'pass')
+# df_pass_plays = df_play_type[(df_play_type['play_type'] == 'pass') & (df_play_type['pass_length'].notna()) & (df_play_type['pass_location'].notna())][df_situation.columns.tolist() + ['pass_length', 'pass_location']]
+# print(df_pass_plays.head(10))
 
 
-def train_model(case, x, y):
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=100)
+def train_model(X, y):
+    # Split the data between X and y
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    print(x_train)
-    print(x_test)
+    # Handle categorical columns for the X values (non-numeric data)
+    categorical_cols = ['posteam', 'defteam', 'posteam_type', 'game_half']
+    X_train_encoded = pd.get_dummies(X_train, columns=categorical_cols, drop_first=True) # Using pd.get_dummies (one-hot encoding)
+    X_test_encoded = pd.get_dummies(X_test, columns=categorical_cols, drop_first=True)
+    X_train_encoded, X_test_encoded = X_train_encoded.align(X_test_encoded, join='left', axis=1, fill_value=0) # Make sure train and test have same columns (important!)
 
-    ''' MODEL BUILDING '''
+    # Drop rows with missing values 
+    train_complete_idx = X_train_encoded.dropna().index.intersection(y_train.dropna().index)
+    X_train_clean = X_train_encoded.loc[train_complete_idx]
+    y_train_clean = y_train.loc[train_complete_idx]
+    test_complete_idx = X_test_encoded.dropna().index.intersection(y_test.dropna().index) # Do the same for test data
+    X_test_clean = X_test_encoded.loc[test_complete_idx]
+    y_test_clean = y_test.loc[test_complete_idx]
 
-    # Linear Regression
-    lr = LinearRegression()
-    lr.fit(x_train, y_train)
+    print(f"Training data shape after cleaning: {X_train_clean.shape}")
+    print(f"Test data shape after cleaning: {X_test_clean.shape}")
+
+    # Create and train the model 
+    model = RandomForestClassifier(n_estimators=100, random_state=42) # Initialize the classifier
+    model.fit(X_train_clean, y_train_clean) # Train the model
+    y_pred = model.predict(X_test_clean) # Make predictions on test set
+    accuracy = accuracy_score(y_test_clean, y_pred) # Calculate accuracy
+    
+    # Print accuracy
+    print(f"Model accuracy: {accuracy:.3f}")
+    print("\nClassification Report:")
+    print(classification_report(y_test_clean, y_pred))
+    
+    # Return the trained model for later use
+    return model, X_train_clean.columns.tolist()  # Also return column names for later predictions
 
 
 
-
-
+train_model(X, y)
 
 
 
@@ -138,3 +174,5 @@ test_case_4 = [[4, 1, 5, 1, 30, 120, 4, -10, 0.2, 0.3, -2.5, 0, 0, 'PHI', 'DAL',
 # print_results(test_case_2)
 # print_results(test_case_3)
 # print_results(test_case_4)
+
+
