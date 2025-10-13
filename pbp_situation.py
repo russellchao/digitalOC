@@ -116,6 +116,7 @@ def train_model(X, y):
 
     print(f"Training data shape after cleaning: {X_train_clean.shape}")
     print(f"Test data shape after cleaning: {X_test_clean.shape}")
+    print()
 
     # Create and train the model 
     model = RandomForestClassifier(n_estimators=100, random_state=42) # Initialize the classifier
@@ -127,52 +128,83 @@ def train_model(X, y):
     print(f"Model accuracy: {accuracy:.3f}")
     print("\nClassification Report:")
     print(classification_report(y_test_clean, y_pred))
+    print()
     
     # Return the trained model for later use
     return model, X_train_clean.columns.tolist()  # Also return column names for later predictions
 
 
-
-train_model(X, y)
-
-
-
+trained_model, feature_columns = train_model(X, y)
+print(feature_columns)
+print()
 
 
+def predict_play(situation, trained_model, feature_columns):
+    ''' Use the situation to determine the most optimal play type '''
+
+    # Print the current situation
+    print(f"Down: {situation[0]}")
+    print(f"Yards to go: {situation[1]}")
+    print(f"Distance to end zone: {situation[2]}")
+    print(f"Goal to go: {situation[3]}")
+    print(f"Quarter seconds remaining: {situation[4]}")  
+    print(f"Game seconds remaining: {situation[5]}")
+    print(f"Game half: {situation[6]}")
+    print(f"Score differential: {situation[7]}")
+    print(f"Win probability: {situation[8]}")
+    print(f"Vegas win probability: {situation[9]}")
+    print(f"Expected points: {situation[10]}")
+    print(f"Offensive team timeouts remaining: {situation[11]}")
+    print(f"Defensive team timeouts remaining: {situation[12]}")
+    print(f"Offensive team: {situation[13]}")
+    print(f"Defensive team: {situation[14]}")
+    print(f"Offensive team type: {situation[15]}")
+    print(f"Divisional game: {situation[16]}")
+
+    # Convert input to DataFrame with correct column names
+    situation_df = pd.DataFrame([situation], columns=['down', 'ydstogo', 'yardline_100', 'goal_to_go', 
+                                                        'quarter_seconds_remaining', 'game_seconds_remaining', 
+                                                        'game_half', 'score_differential', 'wp', 'vegas_wp',
+                                                        'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 
+                                                        'posteam', 'defteam', 'posteam_type', 'div_game'])
+
+    # Apply same categorical encoding as training
+    categorical_cols = ['posteam', 'defteam', 'posteam_type', 'game_half']
+    situation_encoded = pd.get_dummies(situation_df, columns=categorical_cols, drop_first=True)
+    
+    # Make sure it has all the same columns as training data
+    for col in feature_columns:
+        if col not in situation_encoded.columns:
+            situation_encoded[col] = 0
+    
+    # Reorder columns to match training data
+    situation_encoded = situation_encoded[feature_columns]
+
+    # Predict the most optimal play type
+    prediction = trained_model.predict(situation_encoded)
+    prediction_proba = trained_model.predict_proba(situation_encoded)
+
+    print("======================================")
+    print(f"Predicted Play Type: {prediction}")
+    print(f"Confidence {prediction_proba}")
+    print()
+    
+    return prediction[0], prediction_proba[0]  # Return prediction and confidence
 
 
-
-
-def print_results(case):
-    print(f"Down: {case[0][0]}")
-    print(f"Yards to go: {case[0][1]}")
-    print(f"Distance to end zone: {case[0][2]}")
-    print(f"Goal to go: {case[0][3]}")
-    print(f"Quarter seconds remaining: {case[0][4]}")  
-    print(f"Game seconds remaining: {case[0][5]}")
-    print(f"Game half: {case[0][6]}")
-    print(f"Score differential: {case[0][7]}")
-    print(f"Win probability: {case[0][8]}")
-    print(f"Vegas win probability: {case[0][9]}")
-    print(f"Expected points: {case[0][10]}")
-    print(f"Offensive team timeouts remaining: {case[0][11]}")
-    print(f"Defensive team timeouts remaining: {case[0][12]}")
-    print(f"Offensive team: {case[0][13]}")
-    print(f"Defensive team: {case[0][14]}")
-    print(f"Offensive team type: {case[0][15]}")
-    print(f"Divisional game: {case[0][16]}")
 
 
 # FOR LATER: Test the model with random x variables
-test_case_1 = [[2, 5, 30, 0, 300, 900, 1, -3, 0.45, 0.5, 1.2, 2, 2, 'NE', 'NYG', 'home', 0]]
-test_case_2 = [[3, 8, 50, 1, 120, 600, 2, 7, 0.65, 0.6, 3.5, 1, 1, 'KC', 'DEN', 'away', 1]]
-test_case_3 = [[1, 10, 80, 0, 900, 1800, 1, 0, 0.5, 0.55, 0.0, 3, 3, 'DET', 'BUF', 'home', 0]]
-test_case_4 = [[4, 1, 5, 1, 30, 120, 4, -10, 0.2, 0.3, -2.5, 0, 0, 'PHI', 'DAL', 'away', 1]] # PHI would presumably run the "tush-push" play in this situation
+test_case_1 = [2, 5, 30, 0, 300, 2100, 'Half1', -3, 0.45, 0.5, 1.2, 2, 2, 'NE', 'NYG', 'home', 0] # 2nd & 5 from OPP 30 
+test_case_2 = [3, 8, 50, 0, 120, 120, 'Half2', 7, 0.65, 0.6, 3.5, 1, 1, 'KC', 'DEN', 'away', 1] # 3rd & 8 from midfield
+test_case_3 = [1, 10, 80, 0, 900, 2700, 'Half1', 0, 0.5, 0.55, 0.0, 3, 3, 'DET', 'BUF', 'home', 0] # 1st & 10 from OWN 20
+test_case_4 = [1, 7, 7, 1, 60, 60, 'Half2', 4, 0.4, 0.45, -1.0, 0, 1, 'SF', 'SEA', 'away', 1] # 1st & Goal from 7 yards out
+test_case_5 = [4, 1, 5, 0, 120, 120, 'Half2', -10, 0.2, 0.3, -2.5, 0, 0, 'PHI', 'DAL', 'away', 1] # 4th & 1 from OPP 5 - PHI would presumably run the "tush-push" play in this situation
 
 
-# print_results(test_case_1)
-# print_results(test_case_2)
-# print_results(test_case_3)
-# print_results(test_case_4)
-
+# predict_play(test_case_1, trained_model, feature_columns)
+# predict_play(test_case_2, trained_model, feature_columns)
+# predict_play(test_case_3, trained_model, feature_columns)
+# predict_play(test_case_4, trained_model, feature_columns)
+predict_play(test_case_5, trained_model, feature_columns)
 
