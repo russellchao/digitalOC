@@ -1,7 +1,9 @@
 import pandas as pd
+import os
 
 # Load raw data
-df = pd.read_csv("digitalOC/data/pbp_2020_0.csv", low_memory=False)
+input_path = "digitalOC/data/pbp_2024_1.csv"
+df = pd.read_csv(input_path, low_memory=False)
 
 useful_cols =[
     #Game context
@@ -25,12 +27,21 @@ useful_cols =[
 ]
 
 # Keep only the columns that exist in your dataset
+
 useful_cols = [col for col in useful_cols if col in df.columns]
 df = df[useful_cols]
+
 # Drop plays that aren’t meaningful decisions
 df = df[df["play_type"].isin(["run", "pass", "field_goal", "punt"])]
+
 # Drop rows missing critical info
 df = df.dropna(subset=["down", "ydstogo", "yardline_100"])
+
+
+# Automatically make the new filename
+base, ext = os.path.splitext(input_path)
+output_path = f"{base}_cleaned{ext}"
 # Save cleaned version
-df.to_csv("digitalOC/data/pbp_2020_cleaned.csv", index=False)
-print(" Cleaned data saved to digitalOC/data/pbp_2020_cleaned.csv")
+df.to_csv(output_path, index=False)
+
+print(f"Cleaned data saved to {output_path}")
