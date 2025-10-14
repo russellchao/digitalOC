@@ -101,10 +101,15 @@ def train_model(X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Handle categorical columns for the X values (non-numeric data)
+    # (E.g. posteam="KC" becomes posteam_KC=1, all other team columns = 0)
     categorical_cols = ['posteam', 'defteam', 'posteam_type', 'game_half']
     X_train_encoded = pd.get_dummies(X_train, columns=categorical_cols, drop_first=True) # Using pd.get_dummies (one-hot encoding)
     X_test_encoded = pd.get_dummies(X_test, columns=categorical_cols, drop_first=True)
     X_train_encoded, X_test_encoded = X_train_encoded.align(X_test_encoded, join='left', axis=1, fill_value=0) # Make sure train and test have same columns (important!)
+
+    print(f"Training data shape before cleaning: {X_train_encoded.shape}")
+    print(f"Test data shape before cleaning: {X_test_encoded.shape}")
+    print()
 
     # Drop rows with missing values 
     train_complete_idx = X_train_encoded.dropna().index.intersection(y_train.dropna().index)
