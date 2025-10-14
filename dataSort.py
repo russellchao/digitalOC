@@ -1,26 +1,22 @@
 import pandas as pd
 import os
 
-# Load raw data
-input_path = "digitalOC/data/pbp_2024_1.csv"
+#Load the file you want to clean
+input_path = "digitalOC/data/pbp_2024_0.csv"
 df = pd.read_csv(input_path, low_memory=False)
 
 useful_cols =[
     #Game context
-    "game_id", "season_type", "week", "game_date",
-    "home_team", "away_team", "posteam", "defteam", "location",
-    "stadium", "roof", "surface", "temp", "wind",
+    "game_id", "season_type", "home_team", "away_team", "posteam", "defteam", "location", "stadium", "roof", 
+    "surface", "temp", "wind",
 
     #Situations
-    "qtr", "down", "ydstogo", "yardline_100",
-    "time", "quarter_seconds_remaining", "game_seconds_remaining",
+    "qtr", "down", "ydstogo", "yardline_100", "time", "quarter_seconds_remaining", "game_seconds_remaining",
     "score_differential", "goal_to_go","posteam_timeouts_remaining", "defteam_timeouts_remaining",
 
     #Play details
-    "play_type", "rush_attempt", "pass_attempt", "field_goal_attempt",
-    "shotgun", "no_huddle", "qb_dropback",
-    "run_location", "run_gap", "pass_length", "pass_location",
-    "air_yards", "yards_after_catch",
+    "play_type", "rush_attempt", "pass_attempt", "field_goal_attempt", "shotgun", "no_huddle", "qb_dropback",
+    "run_location", "run_gap", "pass_length", "pass_location", "air_yards", "yards_after_catch",
 
     #Outcomes
     "yards_gained", "success", "epa", "touchdown"
