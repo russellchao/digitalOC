@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -13,7 +14,7 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
         - 3rd/4th down: 100% of yards to go gained.
 
     Args (required columns): 'down', 'ydstogo', 'yards_gained',
-                            'first_down', 'touchdown', 'turnover'.
+                            'first_down_run', 'touchdown', 'turnover'.
 
     Returns: Original DataFrame with an added 'success' column (1 = success, 0 = failure).
     """
@@ -27,12 +28,9 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
     # check for automatic failures first, then automatic successes, then down-based logic.
 
     conditions = [
-    # automatic failures (turnovers)
-        (df['turnover'] == 1),
-
     # automatic successes (touchdowns or first downs)
         (df['touchdown'] == 1),
-        (df['first_down'] == 1),
+        (df['first_down_run'] == 1),
 
     # down-based success logic
         (down == 1) & (yards_gained >= 0.40 * ydstogo),
@@ -44,7 +42,7 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
     # outcomes for each condition:
     # 1 corresponds to success, 0 to failure.
     outcomes = [
-        0,  # Turnover = Failure
+        #   0,  # Turnover = Failure
         1,  # Touchdown = Success
         1,  # First Down = Success
         1,  # 1st down success
@@ -61,6 +59,27 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
 
 # example
 if __name__ == "__main__":
+
+    dataFolder = 'data'
+    fileName = 'pbp_2020_0.csv'
+    filePath = os.path.join(dataFolder, fileName)
+
+    pbp_df = pd.read_csv(f"../{filePath}")
+    print("First five rows of data:")
+    print(pbp_df.head())
+    print("\n")
+
+    pbp_df_with_success = calculate_success(pbp_df.copy())
+
+    print("Data frame with success column:")
+
+    # display relevant columns to check the logic
+    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down_run', 'touchdown', 'success']
+    display_cols = [col for col in result_cols if col in pbp_df_with_success.columns]
+    print(pbp_df_with_success[display_cols].head())
+
+
+"""
     # created sample DataFrame to test
     data = {
         'play_description': [
@@ -76,7 +95,7 @@ if __name__ == "__main__":
         'down': [1, 2, 3, 1, 2, 3, 4, 1],
         'ydstogo': [10, 6, 1, 10, 15, 10, 2, 10],
         'yards_gained': [4, 5, 0, 50, 5, -2, 2, 3],
-        'first_down': [0, 0, 0, 1, 0, 0, 1, 0],
+        'first_down_run': [0, 0, 0, 1, 0, 0, 1, 0],
         'touchdown': [0, 0, 0, 1, 0, 0, 0, 0],
         'turnover': [0, 0, 0, 0, 0, 1, 0, 0],
     }
@@ -86,14 +105,16 @@ if __name__ == "__main__":
     print(pbp_df.drop(columns=['play_description']))
     print("\n")
 
+    
     # calculate the success column
     pbp_df_with_success = calculate_success(pbp_df.copy())
 
     print("--- DataFrame with 'success' column ---")
     # display relevant columns to check the logic
-    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down', 'touchdown', 'turnover', 'success']
+    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down_run', 'touchdown', 'turnover', 'success']
     print(pbp_df_with_success[result_cols])
     
     print("\n--- Explanation of Results ---")
     for index, row in pbp_df_with_success.iterrows():
         print(f"Play {index+1}: {row['play_description']} -> Success: {row['success']}")
+"""
