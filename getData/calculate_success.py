@@ -14,7 +14,7 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
         - 3rd/4th down: 100% of yards to go gained.
 
     Args (required columns): 'down', 'ydstogo', 'yards_gained',
-                            'first_down_run', 'touchdown', 'turnover'.
+                            'first_down_rush', 'touchdown', 'turnover'.
 
     Returns: Original DataFrame with an added 'success' column (1 = success, 0 = failure).
     """
@@ -30,7 +30,7 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
     conditions = [
     # automatic successes (touchdowns or first downs)
         (df['touchdown'] == 1),
-        (df['first_down_run'] == 1),
+        (df['first_down_rush'] == 1),
 
     # down-based success logic
         (down == 1) & (yards_gained >= 0.40 * ydstogo),
@@ -63,7 +63,6 @@ if __name__ == "__main__":
     dataFolder = 'data'
     fileName = 'pbp_2020_0.csv'
     filePath = os.path.join(dataFolder, fileName)
-
     pbp_df = pd.read_csv(f"../{filePath}")
     print("First five rows of data:")
     print(pbp_df.head())
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     print("Data frame with success column:")
 
     # display relevant columns to check the logic
-    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down_run', 'touchdown', 'success']
+    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down_rush', 'touchdown', 'success']
     display_cols = [col for col in result_cols if col in pbp_df_with_success.columns]
     print(pbp_df_with_success[display_cols].head())
 
@@ -95,7 +94,7 @@ if __name__ == "__main__":
         'down': [1, 2, 3, 1, 2, 3, 4, 1],
         'ydstogo': [10, 6, 1, 10, 15, 10, 2, 10],
         'yards_gained': [4, 5, 0, 50, 5, -2, 2, 3],
-        'first_down_run': [0, 0, 0, 1, 0, 0, 1, 0],
+        'first_down_rush': [0, 0, 0, 1, 0, 0, 1, 0],
         'touchdown': [0, 0, 0, 1, 0, 0, 0, 0],
         'turnover': [0, 0, 0, 0, 0, 1, 0, 0],
     }
@@ -111,7 +110,7 @@ if __name__ == "__main__":
 
     print("--- DataFrame with 'success' column ---")
     # display relevant columns to check the logic
-    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down_run', 'touchdown', 'turnover', 'success']
+    result_cols = ['down', 'ydstogo', 'yards_gained', 'first_down_rush', 'touchdown', 'turnover', 'success']
     print(pbp_df_with_success[result_cols])
     
     print("\n--- Explanation of Results ---")
