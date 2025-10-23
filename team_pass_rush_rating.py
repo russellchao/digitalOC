@@ -7,7 +7,6 @@ import numpy as np
 # input team abbreviations and seasons to include
 
 
-
 def load_team_stats(pos_team, def_team, All_seasons, seasonsList):
     if All_seasons:
         team_stats = nfl.load_team_stats(seasons=True)
@@ -70,13 +69,16 @@ def get_team_rush_rating(pos_team, def_team):
     rush_rating_df['rush_rating'] = rush_rating_df.apply(calculate_rush_rating, axis=1)
     return rush_rating_df['rush_rating'].mean()
 
-pos_team = input("Enter the offensive team abbreviation (e.g., 'NE' for New England Patriots): ")
-def_team = input("Enter the defensive team abbreviation (e.g., 'NYG' for New York Giants): ")
-All_seasons = input("Do you want to include all seasons? (yes/no): ").strip().lower() == 'yes'
-if not All_seasons:
-    seasons_input = input("Enter the seasons you want to include, separated by commas (e.g., '2018,2019,2020'): ")
-    seasonsList = [int(season.strip()) for season in seasons_input.split(',')]
 
 
-print("PASSER RATING:", get_team_pass_rating(pos_team, def_team))
-print("RUSHER RATING:", get_team_rush_rating(pos_team, def_team))
+if __name__ == "__main__":
+    pos_team = input("Enter the offensive team abbreviation (e.g., 'NE' for New England Patriots): ")
+    def_team = input("Enter the defensive team abbreviation (e.g., 'NYG' for New York Giants): ")
+    All_seasons = input("Do you want to include all seasons? (yes/no): ").strip().lower() == 'yes'
+    if not All_seasons:
+        seasons_input = input("Enter the seasons you want to include, separated by commas (e.g., '2018,2019,2020'): ")
+        seasonsList = [int(season.strip()) for season in seasons_input.split(',')]
+
+
+    print("PASSER RATING:", get_team_pass_rating(pos_team, def_team))
+    print("RUSHER RATING:", get_team_rush_rating(pos_team, def_team))

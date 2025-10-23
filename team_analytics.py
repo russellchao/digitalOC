@@ -2,31 +2,34 @@ import nflreadpy as nfl
 import pandas as pd
 
 
-# Load CSVs
-part = pd.read_csv("data/pbp_participation_2024.csv")
-pbp = pd.read_csv("data/pbp_2024.csv")
-
 # Merge participation with play-by-play context
-merged = pd.merge(
-    part,
-    pbp[
-        [
-            "old_game_id", "play_id",
-            "posteam", "defteam",
-            "posteam_score", "defteam_score", "score_differential",
-            "posteam_timeouts_remaining", "defteam_timeouts_remaining",
-            "down", "yards_gained", "ydstogo", "play_type"
-        ]
-    ],
-    left_on=["old_game_id", "play_id"],
-    right_on=["old_game_id", "play_id"],
-    how="left"
-)
+def df_part_pbp_merged():
+    # Load CSVs
+    part = pd.read_csv("data/pbp_participation_2024.csv")
+    pbp_files = [pd.read_csv("Data/pbp_2024_0.csv"), pd.read_csv("Data/pbp_2024_1.csv")]
+    pbp = pd.concat(pbp_files, ignore_index=True)
+
+    merged = pd.merge(
+        part,
+        pbp[
+            [
+                "old_game_id", "play_id",
+                "posteam", "defteam",
+                "posteam_score", "defteam_score", "score_differential",
+                "posteam_timeouts_remaining", "defteam_timeouts_remaining",
+                "down", "yards_gained", "ydstogo", "play_type"
+            ]
+        ],
+        left_on=["old_game_id", "play_id"],
+        right_on=["old_game_id", "play_id"],
+        how="left"
+    )
+
+    return merged
 
 
 class Team:
     def __init__(self, name: str, df: pd.DataFrame):
-
         self.name = name
         self.df = df
 
@@ -160,27 +163,23 @@ class Team:
 
 
 
-
-
-    
-
     def __repr__(self):
         return f"<Team {self.name}: {self.offensive_snaps()} offensive snaps>"
 
 
 # Example usage
 if __name__ == "__main__":
-    kc = Team("KC", merged)
+    kc = Team(name="KC", df=df_part_pbp_merged())
 
-    #print(kc)
-    """print("Offensive Snaps:", kc.offensive_snaps())
+    print(kc)
+    print("Offensive Snaps:", kc.offensive_snaps())
     print("\nOffensive Personnel:\n", kc.offensive_personnel_counts())
     print("\nFormations:\n", kc.formation_counts())
     print("\nDefensive Personnel Faced:\n", kc.defensive_personnel_faced())
     print("\nPressure Rate:", kc.pressure_rate())
     print(kc.success_rate_by_down())
     print(kc.success_rate_by_playType())
-    print(kc.playType_by_down())"""
-    #print("Blitz rate by down:\n", kc.blitz_rate_by_down())
-    #print("KC success vs blitz:", kc.success_against_blitz())
+    print(kc.playType_by_down())
+    print("Blitz rate by down:\n", kc.blitz_rate_by_down())
+    print("KC success vs blitz:", kc.success_against_blitz())
     

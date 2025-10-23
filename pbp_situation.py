@@ -1,6 +1,3 @@
-# Extract essential data from specific plays 
-# Testing using pbp_2024_0.csv file right now
-
 # Import necessary libraries
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -8,6 +5,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
+
+# Import necessary classes and functions from other files
+from calculate_success import calculate_success
+from team_analytics import Team, df_part_pbp_merged
+from team_pass_rush_rating import get_team_pass_rating, get_team_rush_rating
 
 '''
 x variables include:
@@ -76,22 +78,6 @@ y variables include:
 play_type, run_location, pass_length, pass_type
 '''
 
-def successful_play(situation): 
-    ''' Determines if a play was successful based on the outcome of the play '''
-
-    is_successful = 0
-
-
-
-
-
-
-
-
-
-
-    return is_successful
-
 
 def train_model(X, y):
     # Split the data between X and y
@@ -153,7 +139,7 @@ def predict_play(situation, trained_model, feature_columns):
     print(f"Half seconds remaining: {situation[5]}")
     print(f"Game seconds remaining: {situation[6]}")
     print(f"Score differential: {situation[7]}")
-    print(f"Win probability: {situation[8]}")
+    print(f"Win probability: {situation[8] * 100:.2f}%")
     print(f"Expected points: {situation[9]}")
     print(f"Offensive team timeouts remaining: {situation[10]}")
     print(f"Defensive team timeouts remaining: {situation[11]}")
@@ -185,23 +171,30 @@ def predict_play(situation, trained_model, feature_columns):
     print("======================================")
     print(f"Predicted Play Type: {prediction}")
     print(f"Confidence {prediction_proba}")
+    print("======================================")
     print()
     
     return prediction[0], prediction_proba[0]  # Return prediction and confidence
 
 
-if __name__ == "__main__":
-    ''' Eventually will replace 'if name == main' with a function that will be called via a Flask endpoint ''' 
 
-    # Open the 2024 Play-by-Play CSV file (First Part)
-    df = pd.read_csv("Data/pbp_2024_0.csv")
+
+
+
+
+
+
+if __name__ == "__main__":
+    ''' For testing only. Will eventually add a function with the same functionality below that will be called from an endpoint ''' 
+
+    # Open both 2024 Play-by-Play CSV files and combine them
+    pbp_files = [pd.read_csv("Data/pbp_2024_0.csv"), pd.read_csv("Data/pbp_2024_1.csv")]
+    df = pd.concat(pbp_files, ignore_index=True)
     print(df.columns.to_list())
     print(df.head())
     
     # Filter columns that only contain "run" or "pass" for play_type
     df_filtered = df[df['play_type'].isin(['run', 'pass'])]
-
-    #TODO: Determine if a play was successful (for the y-variables)
 
     # (game situation) x variables using categories 1-3 for now
     X = df_filtered[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
@@ -209,7 +202,7 @@ if __name__ == "__main__":
             'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam']]
     print(X.head(10))
 
-    # y variable, play type will be "run" or "pass" for now
+    # y variables
     y = df_filtered['play_type']
     print(y.head(10))
 
@@ -218,32 +211,25 @@ if __name__ == "__main__":
     print()
 
     # Test situations to predict play type - [down, ydstogo, yardline_100, goal_to_go, quarter_seconds_remaining, half_seconds_remaining, game_seconds_remaining, score_differential, wp, ep, posteam_timeouts_remaining, defteam_timeouts_remaining, posteam, defteam]
-    
-    # 2nd & 5 from opponent's 30-yard line, early 2nd quarter, tied game, balanced situation
-    test_case_1 = [2, 5, 30, 0, 720, 1620, 2520, 0, 0.52, 1.8, 3, 3, 'KC', 'BUF']
-    
-    # 3rd & 8 from midfield, late 3rd quarter, down by 3, passing situation
-    test_case_2 = [3, 8, 50, 0, 180, 1080, 1080, -3, 0.42, 0.8, 2, 3, 'GB', 'DAL'] 
-    
-    # 1st & 10 from own 25-yard line, early 1st quarter, ahead by 7, balanced situation
-    test_case_3 = [1, 10, 75, 0, 480, 1380, 3180, 7, 0.62, -0.4, 3, 3, 'SF', 'SEA']
-    
-    # 1st & Goal from 8-yard line, late 4th quarter, down by 4, red zone situation  
-    test_case_4 = [1, 8, 8, 1, 95, 95, 95, -4, 0.15, 4.2, 1, 2, 'PHI', 'NYG']
-    
-    # 4th & 2 from opponent's 35, late 4th quarter, down by 6, desperation situation
-    test_case_5 = [4, 2, 35, 0, 45, 45, 45, -6, 0.05, 1.2, 0, 1, 'TB', 'DET']
+    test_case_1 = [2, 5, 30, 0, 720, 1620, 2520, 0, 0.52, 1.8, 3, 3, 'KC', 'BUF'] # 2nd & 5 from opponent's 30-yard line, early 2nd quarter, tied game, balanced situation
+    test_case_2 = [3, 8, 50, 0, 180, 1080, 1080, -3, 0.42, 0.8, 2, 3, 'GB', 'DAL'] # 3rd & 8 from midfield, late 3rd quarter, down by 3, passing situation
+    test_case_3 = [1, 10, 75, 0, 480, 1380, 3180, 7, 0.62, -0.4, 3, 3, 'SF', 'SEA'] # 1st & 10 from own 25-yard line, early 1st quarter, ahead by 7, balanced situation
+    test_case_4 = [1, 8, 8, 1, 95, 95, 95, -4, 0.15, 4.2, 1, 2, 'NE', 'NYG'] # 1st & Goal from 8-yard line, late 4th quarter, down by 4, red zone situation  
+    test_case_5 = [4, 2, 35, 0, 45, 45, 45, -6, 0.05, 1.2, 0, 1, 'TB', 'DET'] # 4th & 2 from opponent's 35, late 4th quarter, down by 6, desperation situation
+    test_case_6 = [3, 1, 60, 0, 600, 1200, 1800, 0, 0.50, 0.5, 2, 2, 'MIA', 'NYJ'] # 3rd & 1 from own 40, mid 2nd quarter, tied game, short yardage situation
+    test_case_7 = [1, 1, 1, 1, 600, 600, 2400, 0, 0.50, 0.5, 2, 2, 'PHI', 'LAR'] # Tush Push Situation for the Eagles
+    test_case_8 = [3, 15, 80, 0, 300, 900, 900, -10, 0.30, -1.5, 1, 2, 'CIN', 'PIT'] # 3rd and long from own 20, late 3rd quarter, down by 10, passing situation
 
-    # 3rd & 1 from own 40, mid 2nd quarter, tied game, short yardage situation
-    test_case_6 = [3, 1, 60, 0, 600, 1200, 1800, 0, 0.50, 0.5, 2, 2, 'MIA', 'NYJ']
+    all_test_cases = [test_case_1, test_case_2, test_case_3, test_case_4, test_case_5, test_case_6, test_case_7, test_case_8]
 
-    # Tush Push Situation for the Eagles
-    test_case_7 = [1, 1, 1, 1, 600, 600, 2400, 0, 0.50, 0.5, 2, 2, 'PHI', 'SF']
+    for test_case in all_test_cases:
+        # # Get the possession team's participation and pbp stats 
+        # pos_team_abbr = test_case[12]
+        # team_stats = Team(name=pos_team_abbr, df=df_part_pbp_merged()) 
 
-    predict_play(test_case_1, trained_model, feature_columns)
-    predict_play(test_case_2, trained_model, feature_columns)
-    predict_play(test_case_3, trained_model, feature_columns)
-    predict_play(test_case_4, trained_model, feature_columns)
-    predict_play(test_case_5, trained_model, feature_columns)
-    predict_play(test_case_6, trained_model, feature_columns)
-    predict_play(test_case_7, trained_model, feature_columns)
+        # # Get the possession team's passing and rushing data against the specific defense
+        # def_team_abbr = test_case[13]
+
+
+        predict_play(test_case, trained_model, feature_columns)
+    
