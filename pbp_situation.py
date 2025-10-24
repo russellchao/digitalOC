@@ -6,78 +6,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
-# Import necessary classes and functions from other files
-from calculate_success import calculate_success
-from team_analytics import Team, df_part_pbp_merged
-from team_pass_rush_rating import get_team_pass_rating, get_team_rush_rating
-
-'''
-x variables include:
-1. Game Situation Variables (Critical)
-down - Current down (1st, 2nd, 3rd, 4th)
-ydstogo - Yards to go for first down
-yardline_100 - Distance to opponent's end zone (field position)
-goal_to_go - Binary flag if in goal-to-go situation
-quarter_seconds_remaining - Time left in current quarter
-game_seconds_remaining - Total time left in game
-game_half - Half1 or Half2
-
-2. Score and Win Probability Variables (Critical)
-score_differential - Current point differential (positive = leading)
-wp - Win probability (0-1)
-vegas_wp - Vegas-adjusted win probability
-ep - Expected points for current situation
-posteam_timeouts_remaining - Timeouts left for offensive team
-defteam_timeouts_remaining - Timeouts left for defensive team
-
-3. Team and Matchup Variables (Important)
-posteam - Possession team (offensive team)
-defteam - Defensive team
-posteam_type - Home or away team on offense
-div_game - Divisional game flag
-
-4. Formation and Personnel Variables (Important)
-shotgun - Binary flag for shotgun formation
-no_huddle - Binary flag for no-huddle offense
-qb_dropback - Binary flag indicating QB dropped back
-
-5. Environmental Variables (Moderately Important)
-roof - Stadium type (outdoors, dome, retractable)
-surface - Field surface (grass, turf)
-temp - Temperature in Fahrenheit
-wind - Wind speed in mph
-weather - Weather description
-
-6. Drive Context Variables (Moderately Important)
-drive_play_count - Number of plays in current drive
-drive_time_of_possession - Time of possession for current drive
-drive_start_yard_line - Starting field position of drive
-ydsnet - Net yards gained on current drive
-
-7. Historical Performance Variables (Advanced)
-total_home_rush_epa / total_away_rush_epa - Cumulative rushing EPA
-total_home_pass_epa / total_away_pass_epa - Cumulative passing EPA
-series_success - Success rate in current series
-cp - Completion probability (for pass plays)
-cpoe - Completion percentage over expected
-
-8. Coaching and Personnel Variables (Useful)
-home_coach / away_coach - Head coaches
-passer_player_name - Starting QB
-season_type - Regular season, playoffs, etc.
-week - Week of the season
-
-9. Betting Market Variables (Contextual)
-spread_line - Point spread
-total_line - Over/under total
-vegas_home_wp - Vegas home team win probability
-'''
-
-'''
-y variables include:
-play_type, run_location, pass_length, pass_type
-'''
-
 
 def train_model(X, y):
     # Split the data between X and y
@@ -124,11 +52,6 @@ def train_model(X, y):
 
 def predict_play(situation, trained_model, feature_columns):
     ''' Use the situation to determine the most optimal play type '''
-
-    # Print the situation input (remove some print statements)
-    # X = df_filtered[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
-    #         'half_seconds_remaining', 'game_seconds_remaining', 'score_differential', 'wp',
-    #         'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam']]
 
     # Print the current situation
     print(f"Down: {situation[0]}")
@@ -183,7 +106,6 @@ def predict_play(situation, trained_model, feature_columns):
 
 
 
-
 if __name__ == "__main__":
     ''' For testing only. Will eventually add a function with the same functionality below that will be called from an endpoint ''' 
 
@@ -195,6 +117,7 @@ if __name__ == "__main__":
     
     # Filter columns that only contain "run" or "pass" for play_type
     df_filtered = df[df['play_type'].isin(['run', 'pass'])]
+    print(f"Number of rows after filtering for run/pass plays: {df_filtered.shape[0]}")
 
     # (game situation) x variables using categories 1-3 for now
     X = df_filtered[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
@@ -211,25 +134,17 @@ if __name__ == "__main__":
     print()
 
     # Test situations to predict play type - [down, ydstogo, yardline_100, goal_to_go, quarter_seconds_remaining, half_seconds_remaining, game_seconds_remaining, score_differential, wp, ep, posteam_timeouts_remaining, defteam_timeouts_remaining, posteam, defteam]
-    test_case_1 = [2, 5, 30, 0, 720, 1620, 2520, 0, 0.52, 1.8, 3, 3, 'KC', 'BUF'] # 2nd & 5 from opponent's 30-yard line, early 2nd quarter, tied game, balanced situation
-    test_case_2 = [3, 8, 50, 0, 180, 1080, 1080, -3, 0.42, 0.8, 2, 3, 'GB', 'DAL'] # 3rd & 8 from midfield, late 3rd quarter, down by 3, passing situation
-    test_case_3 = [1, 10, 75, 0, 480, 1380, 3180, 7, 0.62, -0.4, 3, 3, 'SF', 'SEA'] # 1st & 10 from own 25-yard line, early 1st quarter, ahead by 7, balanced situation
-    test_case_4 = [1, 8, 8, 1, 95, 95, 95, -4, 0.15, 4.2, 1, 2, 'NE', 'NYG'] # 1st & Goal from 8-yard line, late 4th quarter, down by 4, red zone situation  
-    test_case_5 = [4, 2, 35, 0, 45, 45, 45, -6, 0.05, 1.2, 0, 1, 'TB', 'DET'] # 4th & 2 from opponent's 35, late 4th quarter, down by 6, desperation situation
-    test_case_6 = [3, 1, 60, 0, 600, 1200, 1800, 0, 0.50, 0.5, 2, 2, 'MIA', 'NYJ'] # 3rd & 1 from own 40, mid 2nd quarter, tied game, short yardage situation
-    test_case_7 = [1, 1, 1, 1, 600, 600, 2400, 0, 0.50, 0.5, 2, 2, 'PHI', 'LAR'] # Tush Push Situation for the Eagles
-    test_case_8 = [3, 15, 80, 0, 300, 900, 900, -10, 0.30, -1.5, 1, 2, 'CIN', 'PIT'] # 3rd and long from own 20, late 3rd quarter, down by 10, passing situation
+    test_case_1 = [2, 5, 30, 0, 720, 720, 2520, 0, 0.52, 1.8, 3, 3, 'KC', 'BUF'] # 2nd & 5 from opponent's 30-yard line, Q2-12:00, tied game, balanced situation
+    test_case_2 = [3, 8, 50, 0, 180, 1080, 1080, -3, 0.42, 0.8, 2, 3, 'GB', 'DAL'] # 3rd & 8 from midfield, Q3-3:00, down by 3, passing situation
+    test_case_3 = [1, 10, 75, 0, 480, 1380, 3180, 7, 0.62, -0.4, 3, 3, 'SF', 'SEA'] # 1st & 10 from own 25-yard line, Q1-8:00, ahead by 7, balanced situation
+    test_case_4 = [1, 8, 8, 1, 95, 95, 95, -4, 0.15, 4.2, 1, 2, 'NE', 'NYG'] # 1st & Goal from 8-yard line, Q4-1:35, down by 4, red zone situation  
+    test_case_5 = [4, 2, 35, 0, 45, 45, 45, -6, 0.05, 1.2, 0, 1, 'TB', 'DET'] # 4th & 2 from opponent's 35, Q4-0:45, down by 6, desperation situation
+    test_case_6 = [3, 1, 60, 0, 600, 1500, 3300, 0, 0.50, 0.5, 2, 2, 'MIA', 'NYJ'] # 3rd & 1 from own 40, Q1-10:00, tied game, short yardage situation
+    test_case_7 = [1, 1, 1, 1, 600, 600, 2400, 0, 0.50, 0.5, 2, 2, 'PHI', 'LAR'] # 1st & Goal from the 1, Q3-10:00, Tush Push Situation for the Eagles 
+    test_case_8 = [3, 15, 80, 0, 900, 900, 900, -10, 0.30, -1.5, 1, 2, 'CIN', 'PIT'] # 3rd and long from own 20, Q4-15:00, down by 10, passing situation
 
     all_test_cases = [test_case_1, test_case_2, test_case_3, test_case_4, test_case_5, test_case_6, test_case_7, test_case_8]
 
     for test_case in all_test_cases:
-        # # Get the possession team's participation and pbp stats 
-        # pos_team_abbr = test_case[12]
-        # team_stats = Team(name=pos_team_abbr, df=df_part_pbp_merged()) 
-
-        # # Get the possession team's passing and rushing data against the specific defense
-        # def_team_abbr = test_case[13]
-
-
         predict_play(test_case, trained_model, feature_columns)
     
