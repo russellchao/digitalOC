@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load raw data
-df = pd.read_csv("digitalOC/data/pbp_2020_0.csv", low_memory=False)
+df = pd.read_csv("data/pbp_2020_0.csv", low_memory=False)
 
 useful_cols =[
     #Game context
@@ -33,4 +33,4 @@ df = df[df["play_type"].isin(["run", "pass", "field_goal", "punt"])]
 df = df.dropna(subset=["down", "ydstogo", "yardline_100"])
 # Save cleaned version
 df.to_csv("digitalOC/data/pbp_2020_cleaned.csv", index=False)
-print(" Cleaned data saved to digitalOC/data/pbp_2020_cleaned.csv")
+print(" Cleaned data saved to data/pbp_2020_cleaned.csv")
