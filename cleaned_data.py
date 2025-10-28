@@ -31,24 +31,29 @@ epa	Expected points added (EPA) by the posteam for the given play.
 
 
 # Select relevant columns for analysis
-relevant_columns = [
-    'game_id', 'play_id', 'home_team', 'away_team', 'game_date', 'down',
-    'ydstogo', 'quarter_seconds_remaining', 'half_seconds_remaining',
-    'game_seconds_remaining', 'qtr', 'yardline_100', 'posteam_timeouts_remaining', 
-    'score_differential', 'posteam', 'defteam', 'posteam_timeouts_remaining'
-]
+relevant_columns =  [
+        "old_game_id", "play_id",
+        "posteam", "defteam",
+        "play_type", "pass_attempt", "rush_attempt", "air_yards", "run_gap",
+        "qb_kneel", "qb_spike", "qb_scramble", "sack",
+        "down", "yards_gained", "ydstogo",
+        "epa"
+    ]
 
 # Pull relevant data
 # Clean any rows with 'NaN' data
 df_relevant = df[relevant_columns]
 df_cleaned = df_relevant.dropna()
 
+# Save your DataFrame to a new CSV file
+df_cleaned.to_csv("data/2024_0_EloData.csv", index=False)
+
 # Compare dataframe sizes after cleaning
 print("Size of dataframe before cleaning: ", df_relevant.shape)
 print("Size of dataframe after cleaning: ", df_cleaned.shape)
 
 # Print the first 50 rows of the cleaned data
-print(df_cleaned.head(50))
+print(df_cleaned.head(10))
 
 # print(type(df))
 # print(type(df_relevant))
