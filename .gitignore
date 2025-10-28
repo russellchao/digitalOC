@@ -1,12 +1,2 @@
 data/*.csv
-__pycache__/team_pass_rush_rating.cpython-311.pyc
-__pycache__/team_analytics.cpython-311.pyc
-__pycache__/calculate_success.cpython-311.pyc
-__pycache__/calculate_success.cpython-312.pyc
-__pycache__/team_analytics.cpython-312.pyc
-__pycache__/team_pass_rush_rating.cpython-312.pyc
-notes.txt
-team_stats_plan.txt
-__pycache__/pbp_situation_model.cpython-311.pyc
-__pycache__/pbp_situation_model.cpython-312.pyc
-.gitignore
+dataSort.py
