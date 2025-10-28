@@ -2,23 +2,29 @@ import pandas as pd
 import numpy as np
 import nflreadpy as nfl
 
-pbp = pd.read_csv("data/pbp_2024.csv", low_memory=False)
+pbp = pd.read_csv("data/pbp_2024_0.csv", low_memory=False)
 pbp_subset = pbp[
     [
-        "old_game_id", "play_id",
-        "posteam", "defteam",
-        "posteam_score", "defteam_score", "score_differential",
-        "posteam_timeouts_remaining", "defteam_timeouts_remaining",
-        "down", "yards_gained", "ydstogo", "desc", "epa",
-        "pass_attempt", "rush_attempt", "qb_scramble", "sack",
-        "run_location", "run_gap", "pass_length", "pass_location",  
-        "play_type", "play", "air_yards"
+        "old_game_id", "play_id",       
+        "posteam", "defteam",           
+        "play_type", "pass_attempt", "rush_attempt", "air_yards", "run_gap",  
+        "qb_kneel", "qb_spike", "qb_scramble", "sack",  
+        "down", "yards_gained", "ydstogo",  
+        "epa"  
     ]
 ]
 
-part = pd.read_csv("data/pbp_participation_2024.csv")
+part = pd.read_csv(
+    "data/pbp_participation_2024.csv",
+    usecols=[
+        "old_game_id", "play_id",
+        "was_pressure", "number_of_pass_rushers",
+        "offense_personnel", "offense_formation", "defense_personnel"
+    ]
+)
 
 merged = pd.merge(part, pbp_subset, on=["old_game_id", "play_id"], how="left")
+
 
 class PlayClassifier:
     @staticmethod
@@ -267,7 +273,7 @@ def compute_elo_per_play_type(category_stats: pd.DataFrame) -> dict:
     return elo_scores
 
 if __name__ == "__main__":
-    kc = Team("KC", merged)
+    kc = Team("LV", merged)
     category_stats = kc.offensive_category_stats()
     per_type_elo = compute_elo_per_play_type(category_stats)
 
