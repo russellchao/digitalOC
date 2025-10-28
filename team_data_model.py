@@ -46,4 +46,4 @@ def Model(home_team , away_team , posteam , defteam , location ,
 
     # This function would contain the logic to predict the outcome of a play
     # based on the input features. For now, it returns a dummy value.
-    return 0.0
+    return 0
