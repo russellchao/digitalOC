@@ -14,7 +14,7 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
         - 3rd/4th down: 100% of yards to go gained.
 
     Args (required columns): 'down', 'ydstogo', 'yards_gained',
-                            'first_down_rush', 'first_down_pass', 'touchdown', 'turnover'.
+                            'first_down_rush', 'first_down_pass', 'touchdown', 'interception'.
 
     Returns: Original DataFrame with an added 'success' column (1 = success, 0 = failure).
     """
@@ -38,6 +38,9 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
         (down == 2) & (yards_gained >= 0.60 * ydstogo),
         (down == 3) & (yards_gained >= 1.00 * ydstogo),
         (down == 4) & (yards_gained >= 1.00 * ydstogo),
+
+    # automatic failures (turnovers)
+        (df['interception'] == 1),
     ]
 
     # outcomes for each condition:
@@ -50,6 +53,7 @@ def calculate_success(df: pd.DataFrame) -> pd.DataFrame:
         1,  # 2nd down success
         1,  # 3rd down success
         1,  # 4th down success
+        0,  # Interception = Failure
     ]
 
     # np.select goes through conditions and picks the first one that is True.
@@ -101,7 +105,7 @@ if __name__ == "__main__":
         'first_down_rush': [0, 0, 0, 0, 0, 0, 1, 0],
         'first_down_pass': [0, 0, 0, 1, 0, 0, 0, 0],
         'touchdown': [0, 0, 0, 1, 0, 0, 0, 0],
-        'turnover': [0, 0, 0, 0, 0, 1, 0, 0],
+        'interception': [0, 0, 0, 0, 0, 1, 0, 0],
     }
     pbp_df = pd.DataFrame(data)
 

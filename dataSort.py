@@ -11,7 +11,7 @@ useful_cols =[
     "surface", "temp", "wind",
 
     #Situations
-    "qtr", "down", "ydstogo", "yardline_100", "time", "quarter_seconds_remaining", "game_seconds_remaining",
+    "qtr", "down", "ydstogo", "yardline_100", "time", "quarter_seconds_remaining", "half_seconds_remaining", "game_seconds_remaining",
     "score_differential", "goal_to_go","posteam_timeouts_remaining", "defteam_timeouts_remaining",
 
     #Play details
@@ -19,7 +19,7 @@ useful_cols =[
     "run_location", "run_gap", "pass_length", "pass_location", "air_yards", "yards_after_catch",
 
     #Outcomes
-    "yards_gained", "success", "epa", "touchdown"
+    "yards_gained", "first_down_run", "first_down_pass", "success", "wp", "ep", "epa", "touchdown", "turnover"
 ]
 
 # Keep only the columns that exist in your dataset
