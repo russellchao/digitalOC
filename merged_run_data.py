@@ -2,9 +2,6 @@ import pandas as pd
 import glob 
 import os
 
-# Using glob patterns to find files.
-PLAYS_FILE_PATTERN = 'data/pbp_2020_0.csv'
-PARTICIPATION_FILE_PATTERN = 'data/pbp_participation_2020.csv'
 
 # column and value that identify a run play
 # 'rush_attempt (1 if run, 0 if not)'
@@ -31,9 +28,6 @@ PARTICIPATION_COLUMNS = [
     'offense_formation',
     'offense_personnel'
 ]
-
-# output file
-OUTPUT_FILE = 'data/merged_rush_model_data.csv'
 
 def load_and_process_files(file_pattern: str, required_columns: list) -> pd.DataFrame:
     all_files = glob.glob(file_pattern)
@@ -70,8 +64,15 @@ def load_and_process_files(file_pattern: str, required_columns: list) -> pd.Data
     full_df = pd.concat(df_list, ignore_index=True)
     return full_df
 
-def main():
-    plays_df = load_and_process_files(PLAYS_FILE_PATTERN, PLAYS_COLUMNS)
+def main_func(modyear, year):
+
+    # Using glob patterns to find files.
+    filepath = f'data/pbp_{modyear}.csv'
+    participation_filepath = f'data/pbp_participation_{year}.csv'
+    # output file
+    output_file = f'data/merged_rush_model_data_{modyear}.csv'
+
+    plays_df = load_and_process_files(filepath, PLAYS_COLUMNS)
 
     if plays_df.empty:
         print("Stopping script: Plays data couldnt be loaded.")
@@ -80,7 +81,7 @@ def main():
     plays_df[RUN_ATTEMPT_COLUMN] = pd.to_numeric(plays_df[RUN_ATTEMPT_COLUMN], errors='coerce').fillna(0)
     filtered_plays_df = plays_df[plays_df[RUN_ATTEMPT_COLUMN] == RUN_ATTEMPT_VALUE].copy()
     
-    participation_df = load_and_process_files(PARTICIPATION_FILE_PATTERN, PARTICIPATION_COLUMNS)
+    participation_df = load_and_process_files(participation_filepath, PARTICIPATION_COLUMNS)
 
     if participation_df.empty:
         print("Stopping script: Participation data couldnt be loaded.")
@@ -106,15 +107,27 @@ def main():
     )
     
     try:
-        merged_df.to_csv(OUTPUT_FILE, index=False)
-        print(f"\ncombined data saved to: {os.path.abspath(OUTPUT_FILE)}")
+        merged_df.to_csv(output_file, index=False)
+        print(f"\ncombined data saved to: {os.path.abspath(output_file)}")
         
         print("\nFirst 5 rows of the new data:")
         print(merged_df.head())
 
     except Exception as e:
-        print(f"\nerror saving file to {OUTPUT_FILE}: {e}")
+        print(f"\nerror saving file to {output_file}: {e}")
 
 if __name__ == "__main__":
-# ... existing code ...
-    main()
+    years = [
+        "2020_0",
+        "2020_1",
+        "2021_0",
+        "2021_1",
+        "2022_0",
+        "2022_1",
+        "2023_0",
+        "2023_1",
+        "2024_0",
+        "2024_1"
+    ]
+    for year in years:
+        main_func(year, year[:-2])
