@@ -48,6 +48,7 @@ def load_and_process_files(file_pattern: str, required_columns: list) -> pd.Data
             if 'old_game_id' in df.columns:
                 df['old_game_id'] = df['old_game_id'].astype(str)
             if 'play_id' in df.columns:
+                df['play_id'] = pd.to_numeric(df['play_id'], errors='coerce').fillna(0).astype(int)
                 df['play_id'] = df['play_id'].astype(str)
 
             df_list.append(df)
