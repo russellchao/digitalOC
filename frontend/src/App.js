@@ -6,12 +6,12 @@ import Homepage from './pages/homepage';
 function App() {
   return (
     <Router>
-      <div 
-        style={{ 
-          paddingTop: "60px", 
-          background: "linear-gradient(135deg, #0f2027 0%, #2c5364 100%)",
+      <div
+        style={{
+          background: "linear-gradient(135deg, #358267ff 0%, #0f4834ff 100%)",
           minHeight: "100vh"
-        }}>
+        }}
+      >
 
         { /* App Routes */ }
         <Routes>
