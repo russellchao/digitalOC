@@ -5,6 +5,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
+from TeamElo import PlayClassifier, team_elos
 
 
 def train_pbp_model():
@@ -17,11 +18,18 @@ def train_pbp_model():
     # Filter columns that only contain "run" or "pass" for play_type
     df_filtered = df[df['play_type'].isin(['run', 'pass'])]
     print(f"Number of rows after filtering for run/pass plays: {df_filtered.shape[0]}")
+    df_filtered["play_category"] = df_filtered.apply(PlayClassifier.get_category, axis=1)
 
+    def get_elo(row):
+        team = row["posteam"]
+        category = row["play_category"]
+        return team_elos.get(team, {}).get(category, 1000.0)
+
+    df_filtered["elo_score"] = df_filtered.apply(get_elo, axis=1)
     # (game situation) x variables using categories 1-3 for now
     X = df_filtered[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
             'half_seconds_remaining', 'game_seconds_remaining', 'score_differential', 'wp',
-            'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam']]
+            'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam', 'elo_score']]
     print(X.head(10))
 
     # y variables
