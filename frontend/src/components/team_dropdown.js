@@ -1,6 +1,6 @@
 import React from "react";
 
-const TeamDropdownMenu = ({ team, defaultName, onChange }) => {
+const TeamDropdownMenu = ({ team, onChange }) => {
     return (
         <>
             <label htmlFor="team" style={{ paddingLeft: '20px' }}></label>
@@ -8,7 +8,6 @@ const TeamDropdownMenu = ({ team, defaultName, onChange }) => {
                 name="team" 
                 id="team" 
                 style={{ 
-                    marginLeft: '5px', 
                     padding: '5px', 
                     fontSize: '16px',
                     width: '300px'
@@ -16,7 +15,7 @@ const TeamDropdownMenu = ({ team, defaultName, onChange }) => {
                 value={team}
                 onChange={(e) => onChange(e.target.value)}
             >
-                <option value="" style={{ color: "gray" }}>---- Select {defaultName} ----</option>
+                <option value="" style={{ color: "gray" }}>-</option>
                 <option value="ARI">Arizona Cardinals</option>
                 <option value="ATL">Atlanta Falcons</option>
                 <option value="BAL">Baltimore Ravens</option>

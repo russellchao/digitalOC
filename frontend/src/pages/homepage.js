@@ -48,18 +48,18 @@ const Homepage = () => {
             {/* ---- Team Input Section ---- */}
             <div style={{ paddingLeft: "60px", paddingTop: "20px" }}>
                 <h2>Teams</h2>
-
-                <TeamDropdownMenu 
-                    defaultName="Offense" 
-                    onChange={(value) => setOffenseTeam(value)}
-                /> 
-                <span style={{ paddingLeft: '20px' }}>vs.</span> 
-                <TeamDropdownMenu 
-                    defaultName="Defense" 
-                    onChange={(value) => setDefenseTeam(value)}
-                />
+                
+                <div style={{ paddingLeft: '20px' }}>
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Offense:</span>
+                    <TeamDropdownMenu 
+                        onChange={(value) => setOffenseTeam(value)}
+                    /> 
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Defense:</span>
+                    <TeamDropdownMenu 
+                        onChange={(value) => setDefenseTeam(value)}
+                    />
+                </div>
             </div>
-
 
             {/* ---- Down and Distance Section ---- */}
             <div style={{ paddingLeft: "60px", paddingTop: "20px" }}>
@@ -67,6 +67,7 @@ const Homepage = () => {
 
                 <div style={{ paddingLeft: '20px' }}>
                     {/* Down Selector */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Down:</span>
                     <select
                         name="down"
                         id="down"
@@ -78,28 +79,26 @@ const Homepage = () => {
                         value={down}
                         onChange={(e) => setDown(e.target.value)}
                     >
-                        <option value="" style={{ color: "gray" }}>---- Select Down ----</option>
+                        <option value="">-</option>
                         <option value="1">1st</option>
                         <option value="2">2nd</option>
                         <option value="3">3rd</option>
                         <option value="4">4th</option>
                     </select>
 
-                    <span style={{ paddingLeft: '10px' }}>&</span> 
-
                     {/* Yards to Go */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Yards to go:</span>
                     <input
                         type="number"
                         name="ydsToGo"
                         id="ydsToGo"
-                        placeholder="Yards to Go"
                         min="1"
                         max="99"
                         style={{
                             marginLeft: '10px',
                             padding: '5px',
                             fontSize: '16px',
-                            width: '150px',
+                            width: '80px',
                         }}
                         value={ydsToGo}
                         onChange={(e) => {
@@ -110,9 +109,8 @@ const Homepage = () => {
                         }}
                     />
 
-                    <span style={{ paddingLeft: '10px' }}>from the</span> 
-
-                    {/* Yard line */ }
+                    {/* Territory */ }
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Territory:</span>
                     <select
                         name="ownOppMidfield"
                         id="ownOppMidfield"
@@ -124,17 +122,18 @@ const Homepage = () => {
                         value={ownOppMidfield}
                         onChange={(e) => setOwnOppMidfield(e.target.value)}
                     >
-                        <option value="" style={{ color: "gray" }}>---- Select Own/Opp/Midfield ----</option>
+                        <option value="" style={{ color: "gray" }}>-</option>
                         <option value="own">OWN</option>
                         <option value="opp">OPP</option>
                         <option value="midfield">MIDFIELD (50)</option>
                     </select>
 
+                    {/* Yard line */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Yard Line (leave blank if territory is midfield):</span>
                     <input
                         type="number"
                         name="ydLine50"
                         id="ydLine50"
-                        placeholder="Yard Line"
                         min="1"
                         max="49"
                         style={{
@@ -160,11 +159,11 @@ const Homepage = () => {
 
                 <div style={{ paddingLeft: '20px' }}>
                     {/* Offense Score */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Offense Points:</span>
                     <input
                         type="number"
                         name="offensePoints"
                         id="offensePoints"
-                        placeholder="Offense Points"
                         min="0"
                         style={{
                             marginLeft: '10px',
@@ -181,14 +180,12 @@ const Homepage = () => {
                         }}
                     />
 
-                    <span style={{ paddingLeft: '10px' }}>-</span> 
-
                     {/* Defense Score */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Defense Points:</span>
                     <input
                         type="number"
                         name="defensePoints"
                         id="defensePoints"
-                        placeholder="Defense Points"
                         min="0"
                         style={{
                             marginLeft: '10px',
@@ -208,9 +205,92 @@ const Homepage = () => {
             </div>
 
             {/* ---- Time Section ---- */}
+            <div style={{ paddingLeft: '60px', paddingTop: '20px' }}>
+                <h2>Time</h2>
 
+                <div style={{ paddingLeft: '20px' }}>
+                    {/* Quarter Selector */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Quarter:</span>
+                    <select
+                        name="quarter"
+                        id="quarter"
+                        style={{
+                            marginLeft: '5px',
+                            padding: '5px',
+                            fontSize: '16px',
+                            width: '100px'
+                        }}
+                        value={quarter}
+                        onChange={(e) => setQuarter(e.target.value)}
+                    >
+                        <option value="">-</option>
+                        <option value="1">1st</option>
+                        <option value="2">2nd</option>
+                        <option value="3">3rd</option>
+                        <option value="4">4th</option>
+                        <option value="OT">Overtime</option>
+                    </select>
 
-            
+                    {/* Minutes */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Minutes:</span>
+                    <input
+                        type="number"
+                        name="minutes"
+                        id="minutes"
+                        min="0"
+                        max="15"
+                        style={{
+                            marginLeft: '10px',
+                            padding: '5px',
+                            fontSize: '16px',
+                            width: '100px',
+                        }}
+                        value={minutes}
+                        onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            if ((value >= 0 && value <= 15) || e.target.value === '') {
+                                setMinutes(e.target.value);
+                                // If minutes is set to 15, automatically set seconds to 0
+                                if (value === 15) {
+                                    setSeconds(0);
+                                }
+                            }
+                        }}
+                    />
+
+                    {/* Seconds */}
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Seconds:</span>
+                    <input
+                        type="number"
+                        name="seconds"
+                        id="seconds"
+                        min="0"
+                        max="59"
+                        style={{
+                            marginLeft: '10px',
+                            padding: '5px',
+                            fontSize: '16px',
+                            width: '100px',
+                        }}
+                        value={seconds}
+                        onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            // If minutes is 15, only allow seconds to be 0
+                            if (parseInt(minutes) === 15) {
+                                setSeconds(0);
+                                return;
+                            }
+                            // Normal validation for other cases
+                            if ((value >= 0 && value <= 59) || e.target.value === '') {
+                                setSeconds(e.target.value);
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* ---- Timeouts Section ---- */}
+
         </div>
     );
 }
