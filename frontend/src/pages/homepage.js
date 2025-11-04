@@ -2,13 +2,6 @@ import React, {useRef, useEffect, useState} from 'react';
 import TeamDropdownMenu from '../components/team_dropdown';
 
 const Homepage = () => {
-
-    /* 
-        ---- Attributes for game situation ----
-    
-        NOTE: Some attributes will be directly inputted from the UI while other attributes will be calculated based on the 
-        values of the inputted attributes (attributes for the play-by-play situation ML model)
-    */
     
     // Team attributes
     const [offenseTeam, setOffenseTeam] = useState("");
@@ -19,27 +12,20 @@ const Homepage = () => {
     const [ydsToGo, setYdsToGo] = useState();
     const [ownOppMidfield, setOwnOppMidfield] = useState(""); // Defines whether the offense is in their own or opponent's territory or midfield
     const [ydLine50, setYdLine50] = useState(); // Yard line relative to own/opp territory (ignored if midfield selected)
-    const [ydLine100, setYdLine100] = useState(); // Total distance to opponent's end zone
-    const [goalToGo, setGoalToGo] = useState(false);
 
     // Score attributes
     const [offensePoints, setOffensePoints] = useState(); 
     const [defensePoints, setDefensePoints] = useState();
-    const [scoreDiff, setScoreDiff] = useState();
 
     // Time attributes
     /* If OT is selected for quarter, the qtr/half/game seconds will be calculated as if it was the 4th quarter */
     const [quarter, setQuarter] = useState(""); 
     const [minutes, setMinutes] = useState(); 
     const [seconds, setSeconds] = useState(); 
-    const [qtrSeconds, setQtrSeconds] = useState(); 
-    const [halfSeconds, setHalfSeconds] = useState(); 
-    const [gameSeconds, setGameSeconds] = useState(); 
 
     // Timeout attributes
     const [offenseTimeouts, setOffenseTimeouts] = useState(""); 
     const [defenseTimeouts, setDefenseTimeouts] = useState(""); 
-
 
     async function calculateQtrSeconds(minutes, seconds) {
         seconds = parseInt(seconds);
@@ -66,12 +52,16 @@ const Homepage = () => {
         return seconds + (minutes * 60); 
     }
 
-
     async function submitSituation() {
         // Ensure no required fields are left blank
         if (!offenseTeam || !defenseTeam || !down || !ydsToGo || !ownOppMidfield || (ownOppMidfield !== 'midfield' && !ydLine50) || !offensePoints || !defensePoints || !quarter || !minutes || !seconds || !offenseTimeouts || !defenseTimeouts) {
             alert("Please fill out all required fields before submitting the situation.");
             return;
+        }
+
+        if (offenseTeam === defenseTeam) {
+            alert("Please select different teams for the offense and defense."); 
+            return; 
         }
 
         // Log the situation to the console
@@ -82,21 +72,13 @@ const Homepage = () => {
         console.log(`Timestamp: ${quarter}${quarter === '1' ? 'st' : quarter === '2' ? 'nd' : quarter === '3' ? 'rd' : quarter === '4' ? 'th' : ''} at ${minutes}:${seconds}`);
         console.log(`Timeouts remaining: Offense ${offenseTimeouts}, Defense ${defenseTimeouts}`);
 
-        // Calculate other values based on the directly inputted values
-        const calculatedYdLine100 = (ownOppMidfield === "own" ? 100 - parseInt(ydLine50) : ownOppMidfield === "midfield" ? 50 : ownOppMidfield === "opp" ? parseInt(ydLine50) : undefined);
-        const calculatedGoalToGo = (calculatedYdLine100 === parseInt(ydsToGo) ? 1 : 0);
-        const calculatedScoreDiff = parseInt(offensePoints) - parseInt(defensePoints);
-        const calculatedQtrSeconds = await calculateQtrSeconds(minutes, seconds);
-        const calculatedHalfSeconds = await calculateHalfSeconds(quarter, minutes, seconds);
-        const calculatedGameSeconds = await calculateGameSeconds(quarter, minutes, seconds);
-
-        // Update state variables (for any other use in the component)
-        setYdLine100(calculatedYdLine100);
-        setGoalToGo(calculatedGoalToGo);
-        setScoreDiff(calculatedScoreDiff);
-        setQtrSeconds(calculatedQtrSeconds);
-        setHalfSeconds(calculatedHalfSeconds);
-        setGameSeconds(calculatedGameSeconds);
+        // Calculate necessary values for the situation array as needed by the backend model
+        const ydLine100 = (ownOppMidfield === "own" ? 100 - parseInt(ydLine50) : ownOppMidfield === "midfield" ? 50 : ownOppMidfield === "opp" ? parseInt(ydLine50) : undefined);
+        const goalToGo = (ydLine100 === parseInt(ydsToGo) ? 1 : 0);
+        const scoreDiff = parseInt(offensePoints) - parseInt(defensePoints);
+        const qtrSeconds = await calculateQtrSeconds(minutes, seconds);
+        const halfSeconds = await calculateHalfSeconds(quarter, minutes, seconds);
+        const gameSeconds = await calculateGameSeconds(quarter, minutes, seconds);
 
         /*
             Situation array that will be used to call the backend and PBP model
@@ -109,9 +91,9 @@ const Homepage = () => {
 
             ** Still haven't filled out wp and ep for now
         */
-        const situationArray = [parseInt(down), parseInt(ydsToGo), calculatedYdLine100, calculatedGoalToGo, calculatedQtrSeconds, 
-            calculatedHalfSeconds, calculatedGameSeconds, calculatedScoreDiff, parseInt(offenseTimeouts), parseInt(defenseTimeouts), 
-            offenseTeam, defenseTeam
+        const situationArray = [
+            parseInt(down), parseInt(ydsToGo), ydLine100, goalToGo, qtrSeconds, halfSeconds, gameSeconds, scoreDiff, 
+            parseInt(offenseTimeouts), parseInt(defenseTimeouts),offenseTeam, defenseTeam
         ];
         console.log(`Situation Array: ${situationArray}`); 
 
@@ -119,11 +101,6 @@ const Homepage = () => {
 
         return; 
     }   
-
-
-
-
-
 
     return (
         <div>
@@ -461,6 +438,5 @@ const Homepage = () => {
         </div>
     );
 }
-
 
 export default Homepage;
