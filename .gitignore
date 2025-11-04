@@ -1,2 +1,11 @@
 data/*.csv
 dataSort.py
+temp_input.csv
+
+# R specific
+.Rhistory
+.RData
+
+#Python specific
+__pycache__/
+*.pyc
