@@ -367,5 +367,12 @@ for team in merged["posteam"].dropna().unique():
     team_elos[team] = compute_elo_per_play_type(stats)
 
 
+elo_df = pd.DataFrame(team_elos).T  # Transpose so teams are rows
+
+# Save to CSV in the data directory
+elo_df.to_csv("data/team_elos_2024.csv", index_label="team")
+
+
+
         
 
