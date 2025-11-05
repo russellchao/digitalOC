@@ -14,3 +14,12 @@ __pycache__/team_pass_rush_rating.cpython-312.pyc
 __pycache__/TeamElo.cpython-312.pyc
 __pycache__/TeamElo.cpython-311.pyc
 .gitignore
+temp_input.csv
+
+# R specific
+.Rhistory
+.RData
+
+#Python specific
+__pycache__/
+*.pyc
