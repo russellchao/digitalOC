@@ -83,19 +83,10 @@ const Homepage = () => {
         /*
             Situation array that will be used to call the backend and PBP model
 
-            X = df_filtered[['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
-            'half_seconds_remaining', 'game_seconds_remaining', 'score_differential', 'wp',
-            'ep', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam']]
-
-            Example situation: [2, 5, 30, 0, 720, 720, 2520, 0, 0.52, 1.8, 3, 3, 'KC', 'BUF']
-
-            ** Still haven't filled out wp and ep for now
+            win probability (wp) and expected points (ep) not included as they will be calculated in the backend
         */
-        const situationArray = [
-            parseInt(down), parseInt(ydsToGo), ydLine100, goalToGo, qtrSeconds, halfSeconds, gameSeconds, scoreDiff, 
-            parseInt(offenseTimeouts), parseInt(defenseTimeouts),offenseTeam, defenseTeam
-        ];
-        console.log(`Situation Array: ${situationArray}`); 
+        const situationArray = `${down}, ${ydsToGo}, ${ydLine100}, ${goalToGo}, ${qtrSeconds}, ${halfSeconds}, ${gameSeconds}, ${scoreDiff}, ${offenseTimeouts}, ${defenseTimeouts}, "${offenseTeam}", "${defenseTeam}"`;
+        console.log(`Situation Array (excluding wp and ep): ${situationArray}`);
 
         // Will eventually build a fetch call here
 

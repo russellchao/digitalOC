@@ -1,18 +1,8 @@
 ''' 
-    This main.py file will act as a data pipeline. 
-    The steps that will happen in this file are as follows:
-
-    1. For now, we are using test cases for game situations, but eventually, we will be taking input from an API.
-    2. The situation input will first be ran through the PBP Situation model to determine whether a play should be a run or pass.
-    3. Then, depending on if the suggested play is a run or pass, the input will then be fed into either the run or pass model. 
-    4. Afterwards, it will then be fed into a model that predicts whether the play will be successful 
-    5. Final step 
+    Test cases only
 '''
 
 from pbp_situation_model import train_pbp_model, predict_play
-
-
-
 
 
 if __name__ == "__main__":
