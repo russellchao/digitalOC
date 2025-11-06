@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 import numpy as np
 
+# model
 def train_run_models():
     """
     2-stage model pipeline:
