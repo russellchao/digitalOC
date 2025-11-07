@@ -1,6 +1,9 @@
 import pandas as pd
 import sys
 
+#script that gathers personnel data:
+# formations, personnel, play data, route, etc.
+
 # 1. PBP (Play-by-Play) files and columns
 PBP_FILES = [
     '../data/pbp_2020_0.csv', 
