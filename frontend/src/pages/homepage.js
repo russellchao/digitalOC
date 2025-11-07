@@ -26,7 +26,7 @@ const Homepage = () => {
     // Timeout attributes
     const [offenseTimeouts, setOffenseTimeouts] = useState(""); 
     const [defenseTimeouts, setDefenseTimeouts] = useState(""); 
-
+    
     async function calculateQtrSeconds(minutes, seconds) {
         seconds = parseInt(seconds);
         minutes = parseInt(minutes);
@@ -71,7 +71,7 @@ const Homepage = () => {
         console.log(`Score (offense - defense) is ${offensePoints} - ${defensePoints}`);
         console.log(`Timestamp: ${quarter}${quarter === '1' ? 'st' : quarter === '2' ? 'nd' : quarter === '3' ? 'rd' : quarter === '4' ? 'th' : ''} at ${minutes}:${seconds}`);
         console.log(`Timeouts remaining: Offense ${offenseTimeouts}, Defense ${defenseTimeouts}`);
-
+        
         // Calculate necessary values for the situation array as needed by the backend model
         const ydLine100 = (ownOppMidfield === "own" ? 100 - parseInt(ydLine50) : ownOppMidfield === "midfield" ? 50 : ownOppMidfield === "opp" ? parseInt(ydLine50) : undefined);
         const goalToGo = (ydLine100 === parseInt(ydsToGo) ? 1 : 0);
@@ -80,13 +80,9 @@ const Homepage = () => {
         const halfSeconds = await calculateHalfSeconds(quarter, minutes, seconds);
         const gameSeconds = await calculateGameSeconds(quarter, minutes, seconds);
 
-        /*
-            Situation array that will be used to call the backend and PBP model
-
-            win probability (wp) and expected points (ep) not included as they will be calculated in the backend
-        */
-        const situationArray = `${down}, ${ydsToGo}, ${ydLine100}, ${goalToGo}, ${qtrSeconds}, ${halfSeconds}, ${gameSeconds}, ${scoreDiff}, ${offenseTimeouts}, ${defenseTimeouts}, "${offenseTeam}", "${defenseTeam}"`;
-        console.log(`Situation Array (excluding wp and ep): ${situationArray}`);
+        // Situation array that will be used to call the backend and PBP model
+        const situationArray = `${down}, ${ydsToGo}, ${ydLine100}, ${goalToGo}, ${qtrSeconds}, ${halfSeconds}, ${gameSeconds}, ${scoreDiff}, ${offenseTimeouts}, ${defenseTimeouts}, ${offenseTeam}, ${defenseTeam}`;
+        console.log(`Situation Array: ${situationArray}`);
 
         // Will eventually build a fetch call here
 
@@ -184,8 +180,8 @@ const Homepage = () => {
                         onChange={(e) => setOwnOppMidfield(e.target.value)}
                     >
                         <option value="" style={{ color: "gray" }}>-</option>
-                        <option value="own">OWN</option>
-                        <option value="opp">OPP</option>
+                        <option value="own">{offenseTeam !== '' ? `${offenseTeam} (OWN)` : 'OWN'}</option>
+                        <option value="opp">{defenseTeam !== '' ? `${defenseTeam} (OPP)` : 'OPP'}</option>
                         <option value="midfield">MIDFIELD (50)</option>
                     </select>
 
@@ -220,7 +216,7 @@ const Homepage = () => {
 
                 <div style={{ paddingLeft: '20px' }}>
                     {/* Offense Score */}
-                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Offense Points:</span>
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>{offenseTeam !== '' ? offenseTeam : 'Offense'} Points:</span>
                     <input
                         type="number"
                         name="offensePoints"
@@ -242,7 +238,7 @@ const Homepage = () => {
                     />
 
                     {/* Defense Score */}
-                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Defense Points:</span>
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>{defenseTeam !== '' ? defenseTeam : 'Defense'} Points:</span>
                     <input
                         type="number"
                         name="defensePoints"
@@ -282,7 +278,9 @@ const Homepage = () => {
                             width: '100px'
                         }}
                         value={quarter}
-                        onChange={(e) => setQuarter(e.target.value)}
+                        onChange={(e) => {
+                            setQuarter(e.target.value);
+                        }}
                     >
                         <option value="">-</option>
                         <option value="1">1st</option>
@@ -356,7 +354,7 @@ const Homepage = () => {
 
                 <div style={{ paddingLeft: '20px' }}>
                     {/* Offense Timeouts */}
-                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Offense Timeouts:</span>
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>{offenseTeam !== '' ? offenseTeam : 'Offense'} Timeouts:</span>
                     <select
                         name="offenseTimeouts"
                         id="offenseTimeouts"
@@ -377,7 +375,7 @@ const Homepage = () => {
                     </select>
 
                     {/* Defense Timeouts */}
-                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>Defense Timeouts:</span>
+                    <span style={{ paddingLeft: '40px', paddingRight: '5px' }}>{defenseTeam !== '' ? defenseTeam : 'Defense'} Timeouts:</span>
                     <select
                         name="defenseTimeouts"
                         id="defenseTimeouts"

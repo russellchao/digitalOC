@@ -14,12 +14,9 @@ __pycache__/team_pass_rush_rating.cpython-312.pyc
 __pycache__/TeamElo.cpython-312.pyc
 __pycache__/TeamElo.cpython-311.pyc
 .gitignore
-temp_input.csv
-
-# R specific
-.Rhistory
-.RData
-
-#Python specific
-__pycache__/
-*.pyc
+__pycache__/app.cpython-311.pyc
+__pycache__/app.cpython-312.pyc
+__pycache__/flask.cpython-311.pyc
+__pycache__/flask.cpython-312.pyc
+wp_ep_calculator/__pycache__/__init__.cpython-311.pyc
+wp_ep_calculator/__pycache__/wp_calculation.cpython-311.pyc

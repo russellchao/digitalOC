@@ -8,7 +8,7 @@ function App() {
     <Router>
       <div
         style={{
-          background: "linear-gradient(135deg, #0f4834ff 0%, #409a7bff 100%)",
+          background: "linear-gradient(135deg, #167050ff 0%, #176047ff 100%)",
           minHeight: "100vh"
         }}
       >
