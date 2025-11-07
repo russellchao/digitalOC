@@ -8,7 +8,7 @@ import sys
 # 1. PBP (Play-by-Play) file
 
 PBP_FILES = [
-    'personnelData/personnel2020.csv'
+    'personnelData/personnel2024.csv'
 ]
 
 # Columns to load from the PBP file
@@ -38,19 +38,19 @@ PBP_COLS = [
 ]
 
 # 2. Player Info (Roster) files
-PLAYER_INFO_FILE_1 = '../data/nextgen_receiving_2020.csv'
+PLAYER_INFO_FILE_1 = '../data/nextgen_receiving_2024.csv'
 PLAYER_INFO_COLS_1 = [
     'player_short_name',  
     'player_position'    
 ]
 
-PLAYER_INFO_FILE_2 = '../data/nextgen_rushing_2020.csv'
+PLAYER_INFO_FILE_2 = '../data/nextgen_rushing_2024.csv'
 PLAYER_INFO_COLS_2 = [
     'player_short_name', 
     'player_position'   
 ]
 
-OUTPUT_FILENAME = 'personnelData/FULLpersonnel2020.csv'
+OUTPUT_FILENAME = 'personnelData/FULLpersonnel2024.csv'
 
 
 def load_roster_file(filepath, columns):
