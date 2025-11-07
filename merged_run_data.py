@@ -26,7 +26,9 @@ PARTICIPATION_COLUMNS = [
     'old_game_id',
     'play_id',
     'offense_formation',
-    'offense_personnel'
+    'offense_personnel',
+    'defense_personnel',      # new
+    'defenders_in_box',       # new
 ]
 
 def load_and_process_files(file_pattern: str, required_columns: list) -> pd.DataFrame:
@@ -89,7 +91,9 @@ def main_func(modyear, year):
         return
     
     key_cols = ['old_game_id', 'play_id']
-    info_cols = ['offense_formation', 'offense_personnel']
+    info_cols = ['offense_formation', 'offense_personnel',  'defense_personnel',     # new
+    'defenders_in_box',      # new
+    ]
     
     # make  all columns exist before trying to drop duplicates
     valid_info_cols = [col for col in info_cols if col in participation_df.columns]
