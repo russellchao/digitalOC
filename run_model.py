@@ -155,12 +155,16 @@ def train_run_models():
     
     return trained_models
 
-# --- This goes at the very end of your file ---
-print("Starting all run model training")
-all_models = train_run_models()
 
-if all_models:
-    print(f"\nAll model training complete")
-    print(f"Trained {len(all_models)} models: {list(all_models.keys())}")
-else:
-    print("\nmodel training failed ---")
+
+
+# --- This goes at the very end of your file ---
+if __name__ == "__main__":
+    print("Starting all run model training")
+    all_models = train_run_models()
+
+    if all_models:
+        print(f"\nAll model training complete")
+        print(f"Trained {len(all_models)} models: {list(all_models.keys())}")
+    else:
+        print("\nmodel training failed ---")
