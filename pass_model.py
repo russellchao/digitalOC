@@ -4,64 +4,90 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 import numpy as np
 
-
 def train_pass_model():
     """
-    Train a pass success prediction model using pre-snap features.
+    Train a pass success prediction model using pre-snap features only.
     """
 
+    # 1. Load data
     df = pd.read_csv("Data/pbp_2024_0.csv", low_memory=False)
-    # only include pass plays
+
+    # 2. Filter to pass plays
     df_pass = df[df['play_type'] == 'pass'].copy()
 
+    if df_pass.empty:
+        print("No pass plays found in the dataset.")
+        return None
+
+    # 3. Create pass success label
     is_first_down = (df_pass['yards_gained'] >= df_pass['ydstogo']) & (df_pass['yards_gained'].notna())
     is_touchdown = (df_pass['touchdown'] == 1)
     df_pass['pass_success'] = (is_first_down | is_touchdown).astype(int)
-    df_pass.loc[:,'pass_success'] = (is_first_down | is_touchdown).astype(int)
 
+    # 4. One-hot encode categorical team columns
     categorical_cols = ["posteam", "defteam"]
     df_pass = pd.get_dummies(df_pass, columns=categorical_cols, drop_first=True)
-    df_pass[['shotgun', 'no_huddle', 'qb_dropback']] = df_pass[['shotgun', 'no_huddle', 'qb_dropback']].fillna(0)
 
+    # 5. Fill missing pre-snap indicators
+    cols_to_fill = [c for c in ['shotgun', 'no_huddle', 'qb_dropback'] if c in df_pass.columns]
+    df_pass[cols_to_fill] = df_pass[cols_to_fill].fillna(0)
 
-    # filtered columns needed to train the pass model
+    # 6. Define pre-snap features
     pre_snap_info = [
-        # situation info is stuff that will be inputted to the model
-        # pre snap offensive scheme and pass details is stuff that we want the model to predict/recommend
-        # situation info
         'down', 'ydstogo', 'yardline_100', 'goal_to_go',
-        'qtr', 'quarter_seconds_remaining', 'half_seconds_remaining', 'game_seconds_remaining',
-        'score_differential', 'posteam_timeouts_remaining', 'defteam_timeouts_remaining',
-        'shotgun', 'no_huddle', 'qb_dropback',
+        'qtr', 'quarter_seconds_remaining', 'half_seconds_remaining',
+        'game_seconds_remaining', 'score_differential',
+        'posteam_timeouts_remaining', 'defteam_timeouts_remaining',
+        'shotgun', 'no_huddle'
     ]
+
+    # remove string columns like 'weather', 'roof', 'surface', 'temp', 'wind' OR encode them
+    for col in ['weather', 'roof', 'surface', 'temp', 'wind']:
+        if col in df_pass.columns:
+            # simple: drop them for now
+            pre_snap_info = [c for c in pre_snap_info if c != col]
+
+    # add one-hot encoded team columns
     dummy_cols = [col for col in df_pass.columns if col.startswith('posteam_') or col.startswith('defteam_')]
-    X = df_pass[pre_snap_info + (dummy_cols)]
+    feature_cols = pre_snap_info + dummy_cols
 
-    post_snap_info = [ # pass details
-        'pass_length', 'pass_location', 'air_yards',
+    X = df_pass[feature_cols]
 
-        # post play details
-        'yards_after_catch', 'yards_gained', 'epa', 'success', 'wpa', 'complete_pass', 
-        'air_epa' #includes hypothetical EPA from incompletions. (could be useful for good plays with drops or bad throws)
+    # ensure all numeric
+    X = X.apply(pd.to_numeric, errors='coerce').fillna(0)
 
-        # add route & personnel data from participation files
-        # add our personalized success column
-    ]
+    y = df_pass['pass_success']
 
-    X = df_pass[pre_snap_info]  # features available before the snap
-    y = df_pass['pass_success'] # target
+    # 8. Ensure all values are numeric
+    X = X.fillna(0)
 
+    # 9. Train/test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    pass_success_model = RandomForestClassifier(n_estimators=300, class_weight="balanced", random_state=42)
+    # 10. Train model
+    pass_success_model = RandomForestClassifier(
+        n_estimators=300,
+        class_weight="balanced",
+        random_state=42
+    )
     pass_success_model.fit(X_train, y_train)
 
+    # 11. Evaluate
     y_pred = pass_success_model.predict(X_test)
     print("Accuracy:", accuracy_score(y_test, y_pred))
     print(classification_report(y_test, y_pred))
 
+    # 12. Save predicted probabilities for all plays
     df_pass['predicted_pass_success_prob'] = pass_success_model.predict_proba(X)[:, 1]
-    return pass_success_model, X.columns.tolist(), df_pass
-print(train_pass_model())
+
+    # 13. Feature importances
+    importances = pd.Series(pass_success_model.feature_importances_, index=X.columns).sort_values(ascending=False)
+    print("\nTop 20 important features:")
+    print(importances.head(20))
+
+    return pass_success_model, feature_cols, df_pass
+
+if __name__ == "__main__":
+    model, features, df_pass_processed = train_pass_model()

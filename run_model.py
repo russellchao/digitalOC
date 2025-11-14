@@ -4,6 +4,8 @@ import numpy as np
 from typing import Dict, Any, List
 
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
@@ -13,13 +15,9 @@ from add_participation_features import add_participation_features
 
 def train_run_models() -> Dict[str, Dict[str, Any]]:
     """
-    2-stage model pipeline:
-    1. 'situation' model predicts run success probability.
-    2. 'tendency' models use that probability as a feature
-       to predict 'run_gap' and 'run_location'.
-
-    This version keeps the original group structure, but
-    adds optional personnel + formation features.
+    Trains tendency models ('run_gap', 'run_location', 'offense_formation',
+    'offense_personnel') using all available situational, personnel, and
+    formation features
     """
 
     # 1. data loading
@@ -39,14 +37,14 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         print("No 'run' plays found. Exiting.")
         return {}
 
-    # 1b. OPTIONAL participation / personnel merge
+    # 1b. participation / personnel merge 
     try:
         part_df: pd.DataFrame = pd.read_csv(
             "Data/pbp_participation_2024.csv",
             low_memory=False,
         )
     except FileNotFoundError:
-        print("Warning: participation file not found, skipping personnel/formation features.")
+        print("participation file not found, skipping personnel/formation features.")
         part_df = None
 
     if part_df is not None:
@@ -56,13 +54,13 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         elif "game_id" in df_filtered.columns and "game_id" in part_df.columns:
             game_key_col = "game_id"
         else:
-            print("Warning: no shared game id between PBP and participation; skipping personnel/formation.")
+            print("no shared game id between pbp and participation; skipping personnel/formation.")
             part_df = None
 
     if part_df is not None:
         keep_cols: List[str] = [game_key_col, "play_id"]
 
-        # only grab what we actually care about right now
+        # only what we care about
         extra_part_cols: List[str] = [
             "offense_personnel",
             "defense_personnel",
@@ -129,24 +127,6 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
             & (df_filtered["score_differential"].abs() <= 8)
         ).astype(int)
 
-    # 3. define 'y' (target) for Stage 1: 'run_success'
-    if not all(col in df_filtered.columns for col in ["yards_gained", "ydstogo", "touchdown"]):
-        print(
-            "Error: Missing 'yards_gained', 'ydstogo', or 'touchdown'. "
-            "Cannot create 'run_success' target. Exiting."
-        )
-        return {}
-
-    is_first_down: pd.Series = (
-        (df_filtered["yards_gained"] >= df_filtered["ydstogo"])
-        & (df_filtered["yards_gained"].notna())
-    )
-    is_touchdown: pd.Series = df_filtered["touchdown"] == 1
-    y_sit: pd.Series = (is_first_down | is_touchdown).astype(int)
-    y_sit.name = "run_success"
-
-    # 4. define 'X' (features) for all models
-
     # original base feature set from your group
     base_feature_columns: List[str] = [
         "down",
@@ -157,6 +137,7 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         "quarter_seconds_remaining",
         "half_seconds_remaining",
         "game_seconds_remaining",
+        "half_seconds_remaining",
         "score_differential",
         "posteam_timeouts_remaining",
         "defteam_timeouts_remaining",
@@ -175,7 +156,7 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         "is_close_game_late",
     ]
 
-    # NEW: personnel numeric features (if created)
+    # personnel numeric features
     personnel_numeric: List[str] = [
         "off_rb",
         "off_te",
@@ -186,7 +167,7 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         "defenders_in_box",
     ]
 
-    # NEW: personnel / formation categoricals
+    # personnel/formation categoricals
     personnel_categorical: List[str] = [
         "offense_formation",
         "off_group_bucket",
@@ -226,6 +207,11 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         "def_group_bucket",
     ]
 
+    # store a list of all numeric columns before get_dummies
+    numeric_cols: List[str] = list(
+        set(X.columns) - set(categorical_cols)
+    )
+
     existing_categorical: List[str] = [
         col for col in categorical_cols if col in X.columns
     ]
@@ -234,102 +220,105 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         columns=existing_categorical,
         drop_first=True,
     )
+    
+    # the fix for the ValueError: Input X contains NaN
+    X_processed = X_processed.fillna(0)
+    
+    # get final list of numeric cols to scale
+    # will include the original numeric_cols + any new 0/1 flags from get_dummies
+    # for Logistic Regression, should scale all features
+    final_feature_cols = X_processed.columns.tolist()
+
 
     # 5. Stage 1 model: predict run_success
-    print("Starting stage 1 model training (Run Success)")
-
-    valid_indices = y_sit.dropna().index
-    X_sit: pd.DataFrame = X_processed.loc[valid_indices]
-    y_sit = y_sit.loc[valid_indices]
-
-    if y_sit.nunique() < 2:
-        print("Error: 'run_success' target has only 1 class, cant train.")
-        return {}
-
-    X_sit_train, X_sit_test, y_sit_train, y_sit_test = train_test_split(
-        X_sit,
-        y_sit,
-        test_size=0.2,
-        random_state=42,
-        stratify=y_sit,
-    )
-
-    sit_model: RandomForestClassifier = RandomForestClassifier(
-        n_estimators=100,
-        random_state=42,
-    )
-    sit_model.fit(X_sit_train, y_sit_train)
-
-    importances: np.ndarray = sit_model.feature_importances_
-    feat_names: np.ndarray = sit_model.feature_names_in_
-
-    sorted_feats: List[tuple[str, float]] = sorted(
-        zip(feat_names, importances),
-        key=lambda x: x[1],
-        reverse=True,
-    )
-
-    print("\nAll situation features (by RF importance):")
-    for name, score in sorted_feats:
-        print(f"{name:<40} {score:.4f}")
-
-    y_sit_pred: np.ndarray = sit_model.predict(X_sit_test)
-    accuracy: float = accuracy_score(y_sit_test, y_sit_pred)
-    print(f"\nStage 1 model ('run_success') Accuracy: {accuracy:.3f}")
+    print("--- Model Pipeline Simplification ---")
+    print(f"Total features being used: {len(X_processed.columns)}")
 
     # 6. Stage 2 models: predict tendencies
-
-    # generate new probability feature for both train and test sets
-    X_tend_train: pd.DataFrame = X_sit_train.copy()
-    X_tend_train["predicted_run_success_prob"] = sit_model.predict_proba(
-        X_sit_train[sit_model.feature_names_in_]
-    )[:, 1]
-
-    X_tend_test: pd.DataFrame = X_sit_test.copy()
-    X_tend_test["predicted_run_success_prob"] = sit_model.predict_proba(
-        X_sit_test[sit_model.feature_names_in_]
-    )[:, 1]
-
     trained_models: Dict[str, Dict[str, Any]] = {}
-    target_columns: List[str] = ["run_gap", "run_location"]
+    # add the new targets to the list
+    target_columns: List[str] = [
+        "run_gap",
+        "run_location",
+        "offense_formation",
+        "offense_personnel",
+    ]
 
     for target in target_columns:
-        print(f"\nStarting stage 2 model training for: {target}")
+        print(f"\nStarting model training for: {target}")
 
         if target not in df_filtered.columns:
-            print(f"Warning: Target column '{target}' not found.")
+            print(f"Target column '{target}' not found.")
             continue
 
         y_tend: pd.Series = df_filtered[target]
 
-        y_tend_train_valid: pd.Series = y_tend.loc[X_tend_train.index].dropna()
-        X_tend_train_clean: pd.DataFrame = X_tend_train.loc[y_tend_train_valid.index]
+        # clean NaNs from this specific target
+        valid_indices = y_tend.dropna().index
+        y_clean = y_tend.loc[valid_indices]
 
-        y_tend_test_valid: pd.Series = y_tend.loc[X_tend_test.index].dropna()
-        X_tend_test_clean: pd.DataFrame = X_tend_test.loc[y_tend_test_valid.index]
+        # remove features that are derived from the target itself
+        X_to_use = X_processed.loc[valid_indices].copy()
+        
+        # define leaky columns
+        formation_leaks = [col for col in X_to_use.columns if col.startswith('offense_formation_')]
+        
+        personnel_leaks = [
+            'off_rb', 'off_te', 'off_wr'
+        ] + [col for col in X_to_use.columns if col.startswith('off_group_bucket_')]
+        
+        if target == 'offense_formation':
+            X_clean = X_to_use.drop(columns=formation_leaks, errors='ignore')
+            print(f"  (Dropped {len(formation_leaks)} formation-related features to prevent leakage)")
+        elif target == 'offense_personnel':
+            X_clean = X_to_use.drop(columns=personnel_leaks, errors='ignore')
+            print(f"  (Dropped {len(personnel_leaks)} personnel-related features to prevent leakage)")
+        else:
+            # for run_gap and run_location, assume no leakage from these groups
+            X_clean = X_to_use
 
-        if X_tend_train_clean.empty or y_tend_train_valid.nunique() < 2:
+        if X_clean.empty or y_clean.nunique() < 2:
             print(
-                f"Warning: Not enough data or classes for '{target}' after cleaning. Skipping..."
+                f"not enough data or classes for '{target}' after cleaning. Skipping..."
             )
             continue
-
-        model: RandomForestClassifier = RandomForestClassifier(
-            n_estimators=100,
+        
+        # create a single train/test split for this target
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_clean,
+            y_clean,
+            test_size=0.2,
             random_state=42,
+            stratify=y_clean
         )
-        model.fit(X_tend_train_clean, y_tend_train_valid)
+        
+        # Logistic Regression performs better when all features are scaled
+        scaler = StandardScaler()
+        # use the X_clean columns
+        X_train_scaled = scaler.fit_transform(X_train[X_clean.columns])
+        X_test_scaled = scaler.transform(X_test[X_clean.columns])
 
-        if not X_tend_test_clean.empty:
-            y_pred: np.ndarray = model.predict(X_tend_test_clean)
-            tend_accuracy: float = accuracy_score(y_tend_test_valid, y_pred)
+        # model: RandomForestClassifier = RandomForestClassifier(
+        #     n_estimators=100,
+        #     random_state=42,
+        # )
+        model: LogisticRegression = LogisticRegression(
+            random_state=42,
+            max_iter=1000, # increase iterations to ensure convergence
+        )
+        
+        model.fit(X_train_scaled, y_train) # scaled data
 
-            print(f"Stage 2 Model accuracy for '{target}': {tend_accuracy:.3f}")
+        if not X_test.empty:
+            y_pred: np.ndarray = model.predict(X_test_scaled) # scaled data
+            tend_accuracy: float = accuracy_score(y_test, y_pred)
+
+            print(f"Model accuracy for '{target}': {tend_accuracy:.3f}")
             print(f"Classification report for '{target}':")
-            labels: np.ndarray = np.union1d(y_tend_test_valid.unique(), y_pred)
+            labels: np.ndarray = np.union1d(y_test.unique(), y_pred)
             print(
                 classification_report(
-                    y_tend_test_valid,
+                    y_test,
                     y_pred,
                     labels=labels,
                     zero_division=0,
@@ -340,14 +329,9 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
 
         trained_models[target] = {
             "model": model,
-            "columns": X_tend_train_clean.columns.tolist(),
+            "columns": X_train.columns.tolist(),
+            "scaler": scaler
         }
-
-    # store situation model too
-    trained_models["situation"] = {
-        "model": sit_model,
-        "columns": X_sit_train.columns.tolist(),
-    }
 
     return trained_models
 
