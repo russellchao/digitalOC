@@ -100,9 +100,47 @@ def load_participation_year(year: str) -> pd.DataFrame:
     part = part.dropna(subset=["nflverse_game_id","play_id"]).drop_duplicates(subset=["nflverse_game_id","play_id"])
     return part
 
+# New Gen stats positions. build a (season, player_short_name) -> player_position map
+def load_ngs_positions_year(year: str) -> pd.DataFrame:
+    """
+    Load Next Gen receiving and rushing for the given year and return a map:
+    ['season','player_short_name','receiver_position'].
+    Receiving takes precedence; rushing fills gaps.
+    """
+    rec_path = os.path.join(DATA_DIR, f"nextgen_receiving_{year}.csv")
+    rush_path = os.path.join(DATA_DIR, f"nextgen_rushing_{year}.csv")
+
+    frames = []
+    if os.path.exists(rec_path):
+        rec = pd.read_csv(rec_path, dtype=str, usecols=lambda c: c in {"season","player_short_name","player_position"})
+        rec = rec.rename(columns={"player_position": "receiver_position"})
+        frames.append(rec)
+    if os.path.exists(rush_path):
+        rush = pd.read_csv(rush_path, dtype=str, usecols=lambda c: c in {"season","player_short_name","player_position"})
+        rush = rush.rename(columns={"player_position": "receiver_position"})
+        frames.append(rush)
+
+    if not frames:
+        # Return empty frame with expected columns; merge will just be NaNs
+        return pd.DataFrame(columns=["season","player_short_name","receiver_position"])
+
+    # Concat with RECEIVING FIRST so WR/TE wins; drop duplicates on player_short_name keeping first
+    ngs = pd.concat(frames, ignore_index=True)
+    # Keep only rows for this season (some files may include season column already correct)
+    ngs["season"] = pd.to_numeric(ngs["season"], errors="coerce").astype("Int64")
+    ngs = ngs[ngs["season"] == int(year)].copy()
+    ngs["player_short_name"] = ngs["player_short_name"].astype(str).str.strip()
+
+    # Prefer first occurrence (receiving) then fill from rushing
+    ngs = ngs.dropna(subset=["player_short_name"]).drop_duplicates(subset=["player_short_name"], keep="first")
+
+    return ngs[["season","player_short_name","receiver_position"]]
+
+
 def build_pass_frame(year: str) -> pd.DataFrame:
     pbp  = load_pbp_year(year)
     part = load_participation_year(year)
+    ngs  = load_ngs_positions_year(year)
 
     # re-normalize defensively (strip, types)
     for df in (pbp, part):
@@ -110,6 +148,22 @@ def build_pass_frame(year: str) -> pd.DataFrame:
         df["play_id"] = to_int_play_id(df["play_id"])
 
     merged = pbp.merge(part, on=["nflverse_game_id","play_id"], how="left")
+
+    # New Gen stats positions: parse season and join receiver position
+    merged["season"] = pd.to_numeric(merged["nflverse_game_id"].str.split("_", n=1).str[0], errors="coerce").astype("Int64")
+    # receiver in PBP already matches NGS player_short_name format (e.g., 'D.Hopkins', 'R.Mostert')
+    merged["receiver"] = merged["receiver"].astype(str).str.strip()
+
+    if not ngs.empty:
+        merged = merged.merge(
+            ngs,
+            left_on=["season","receiver"],
+            right_on=["season","player_short_name"],
+            how="left"
+        ).drop(columns=["player_short_name"], errors="ignore")
+        # receiver_position now present (or NaN if unknown)
+    else:
+        merged["receiver_position"] = pd.NA
 
     # simple match-rate report
     if "offense_personnel" in merged.columns:
@@ -119,7 +173,9 @@ def build_pass_frame(year: str) -> pd.DataFrame:
         part_cols_present = [c for c in ["possession_team","offense_formation","offense_personnel","route"] if c in merged.columns]
         match_rate = merged[part_cols_present].notna().any(axis=1).mean() if part_cols_present else 0.0
 
-    print(f"[{year}] rows: {len(merged):,}  participation match rate: {match_rate:.1%}")
+        # quick receiver-position coverage
+    pos_cov = merged["receiver_position"].notna().mean()
+    print(f"[{year}] rows: {len(merged):,}  participation match: {match_rate:.1%}  receiver_position coverage: {pos_cov:.1%}")
 
     return merged
 
@@ -137,14 +193,6 @@ def build_and_save(years: List[str], out_name: str = "merged_pass_model_data.csv
 if __name__ == "__main__":
     # change the list if you only want 2024, etc.
     YEARS = ["2024"]  # or ["2020","2021","2022","2023","2024"]
-    build_and_save(YEARS, out_name="merged_pass_model_data.csv")
+    build_and_save(YEARS, out_name="merged_pass_model_data_test.csv")
 
     # returns giant dataframe in csv stored in data folder.
-
-
-
-
-
-
-
-
