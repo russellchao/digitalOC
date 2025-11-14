@@ -3,7 +3,7 @@
 '''
 
 from pbp_situation_model import train_pbp_model, predict_play
-from run_model import train_run_models
+from run_model import train_run_models, predict_run_metrics
 
 
 if __name__ == "__main__":
@@ -41,6 +41,11 @@ if __name__ == "__main__":
 
             Just like the PBP model, build the run/pass models in separate files and then import them here.
         '''
+
+        if prediction == 'run':
+            run_prediction = predict_run_metrics(test_case, all_run_models)
+
+            print(f"Run Prediction: {run_prediction}")
 
 
         

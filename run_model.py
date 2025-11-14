@@ -155,14 +155,15 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         "goal_to_go",
         "qtr",
         "quarter_seconds_remaining",
+        "half_seconds_remaining",
         "game_seconds_remaining",
         "score_differential",
         "posteam_timeouts_remaining",
         "defteam_timeouts_remaining",
+        "posteam",
+        "defteam", 
         "shotgun",
         "no_huddle",
-        "posteam",
-        "defteam",
         "roof",
         "surface",
         "temp",
@@ -200,6 +201,9 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
     for num_col in personnel_numeric:
         if num_col in df_filtered.columns:
             df_filtered[num_col] = df_filtered[num_col].fillna(0)
+
+    # #TODO: Temporarily removing the the personnel features and keeping only the base features
+    # feature_columns: List[str] = (base_feature_columns)
 
     existing_features: List[str] = [
         col for col in feature_columns if col in df_filtered.columns
@@ -346,6 +350,108 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
     }
 
     return trained_models
+
+
+def predict_run_metrics(situation, trained_models):
+    ''' 
+        Function that predicts the most optimal run gap and location 
+        with success probability for this specific run play 
+        based on the trained run models. 
+    '''
+
+    # Convert input to DataFrame with correct column names
+    situation_df = pd.DataFrame([situation], columns=['down', 'ydstogo', 'yardline_100', 'goal_to_go', 'quarter_seconds_remaining',
+                                                      'half_seconds_remaining', 'game_seconds_remaining', 'score_differential', 
+                                                      'posteam_timeouts_remaining', 'defteam_timeouts_remaining', 'posteam', 'defteam'])
+    
+    # Add the engineered features (same as in training)
+    situation_df["is_redzone"] = (situation_df["yardline_100"] <= 20).astype(int)
+    situation_df["is_goal_line"] = (
+        (situation_df["goal_to_go"] == 1) & (situation_df["yardline_100"] <= 10)
+    ).astype(int)
+    situation_df["is_short_yardage"] = (
+        (situation_df["ydstogo"] <= 2) & (situation_df["down"] >= 3)
+    ).astype(int)
+    
+    # Infer quarter from time remaining (simple heuristic)
+    if situation[6] > 2700:  # game_seconds_remaining
+        qtr = 1
+    elif situation[6] > 1800:
+        qtr = 2
+    elif situation[6] > 900:
+        qtr = 3
+    else:
+        qtr = 4
+    
+    situation_df["qtr"] = qtr
+    situation_df["is_two_minute_drill"] = (
+        (situation_df["quarter_seconds_remaining"] <= 120)
+        & (situation_df["qtr"].isin([2, 4]))
+    ).astype(int)
+    situation_df["is_close_game_late"] = (
+        (situation_df["qtr"] == 4)
+        & (situation_df["score_differential"].abs() <= 8)
+    ).astype(int)
+    
+    # Add default values for missing columns that were used in training
+    situation_df["shotgun"] = 0  # default value
+    situation_df["no_huddle"] = 0  # default value
+    situation_df["roof"] = "outdoors"  # default value
+    situation_df["surface"] = "grass"  # default value
+    situation_df["temp"] = 70  # default value
+    situation_df["wind"] = 0  # default value
+    
+    # Apply one-hot encoding to categorical columns (same as training)
+    categorical_cols = ["posteam", "defteam", "roof", "surface", "qtr"]
+    situation_encoded = pd.get_dummies(
+        situation_df,
+        columns=categorical_cols,
+        drop_first=True,
+    )
+    
+    # Get the situation model to predict success probability first
+    sit_model_info = trained_models.get("situation")
+    if sit_model_info:
+        sit_model = sit_model_info["model"]
+        sit_columns = sit_model_info["columns"]
+        
+        # Align columns with training data
+        for col in sit_columns:
+            if col not in situation_encoded.columns:
+                situation_encoded[col] = 0
+        
+        situation_encoded = situation_encoded[sit_columns]
+        
+        # Predict success probability
+        success_prob = sit_model.predict_proba(situation_encoded)[0, 1]
+        print(f"Predicted run success probability: {success_prob:.3f}")
+        
+        # Add this as a feature for tendency models
+        situation_encoded["predicted_run_success_prob"] = success_prob
+    
+    # Predict the most optimal metric (gap, location) for the run play 
+    run_metrics = {}
+    for metric in ["run_gap", "run_location"]:
+        if metric in trained_models:
+            model_info = trained_models[metric]
+            model = model_info["model"]
+            model_columns = model_info["columns"]
+            
+            # Align columns with training data
+            for col in model_columns:
+                if col not in situation_encoded.columns:
+                    situation_encoded[col] = 0
+            
+            # Reorder columns to match training
+            situation_for_prediction = situation_encoded[model_columns]
+            
+            # Predict
+            prediction = model.predict(situation_for_prediction)[0]
+            run_metrics[metric] = prediction
+            print(f"Predicted {metric}: {prediction}")
+
+    return run_metrics
+
 
 
 if __name__ == "__main__":
