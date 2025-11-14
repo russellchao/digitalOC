@@ -37,7 +37,7 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         print("No 'run' plays found. Exiting.")
         return {}
 
-    # 1b. participation / personnel merge
+    # 1b. participation / personnel merge 
     try:
         part_df: pd.DataFrame = pd.read_csv(
             "Data/pbp_participation_2024.csv",
@@ -136,6 +136,7 @@ def train_run_models() -> Dict[str, Dict[str, Any]]:
         "qtr",
         "quarter_seconds_remaining",
         "game_seconds_remaining",
+        "half_seconds_remaining",
         "score_differential",
         "posteam_timeouts_remaining",
         "defteam_timeouts_remaining",
